@@ -1,0 +1,35 @@
+# How to create a course for CodeQuest
+
+CodeQuest is a gamified learning platform. 
+When creating a new course or adding content, please provide a JSON object with the following nested structure:
+
+```json
+{
+  "language": "python",
+  "sections": [
+    {
+      "title": "Section 1: The Basics",
+      "chapters": [
+        {
+          "title": "Chapter 1: Hello World",
+          "lessons": [
+            {
+              "title": "Lesson 1: Printing",
+              "description": "A short description of the lesson.",
+              "content": "Markdown content explaining the concept. Use code blocks for examples.",
+              "challenge": "The task the user needs to complete.",
+              "hint": "An optional helpful hint.",
+              "initialCode": "# Write your code here\n",
+              "expectedOutput": "The exact string output expected from the user's code.",
+              "type": "beginner"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
+```
+
+Make sure the `expectedOutput` exactly matches what the `initialCode` (when solved) will print to stdout.
+The `language` field specifies which programming language this course is for (e.g., "python", "javascript").

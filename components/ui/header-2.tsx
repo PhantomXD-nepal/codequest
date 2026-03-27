@@ -26,6 +26,7 @@ export function Header() {
 	};
 
 	const links = [
+		...(session ? [{ label: 'Dashboard', href: '/dashboard' }] : []),
 		{
 			label: 'Features',
 			href: '#features',
