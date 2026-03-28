@@ -16,6 +16,7 @@ export const user = pgTable("user", {
 
 export const userRelations = relations(user, ({ many }) => ({
 	progress: many(userProgress),
+	achievements: many(userAchievement),
 }));
 
 export const session = pgTable("session", {
@@ -60,8 +61,8 @@ export const verification = pgTable("verification", {
 
 export const userProgress = pgTable("user_progress", {
 	id: text("id").primaryKey(),
-	userId: text("userId").notNull().references(() => user.id),
-	lessonId: text("lessonId").notNull(),
+	userId: text("userid").notNull().references(() => user.id),
+	lessonId: text("lessonid").notNull(),
 	completed: boolean("completed").default(false),
 	completedAt: timestamp("completed_at"),
 });
@@ -73,14 +74,30 @@ export const userProgressRelations = relations(userProgress, ({ one }) => ({
 	}),
 }));
 
-export const section = pgTable("section", {
+export const language = pgTable("language", {
 	id: text("id").primaryKey(),
+	name: text("name").notNull().unique(),
 	title: text("title").notNull(),
-	language: text("language").notNull().default("python"),
+	description: text("description"),
 	order: integer("order").notNull().default(0),
 });
 
-export const sectionRelations = relations(section, ({ many }) => ({
+export const languageRelations = relations(language, ({ many }) => ({
+	sections: many(section),
+}));
+
+export const section = pgTable("section", {
+	id: text("id").primaryKey(),
+	title: text("title").notNull(),
+	languageId: text("language_id").notNull().references(() => language.id),
+	order: integer("order").notNull().default(0),
+});
+
+export const sectionRelations = relations(section, ({ one, many }) => ({
+	language: one(language, {
+		fields: [section.languageId],
+		references: [language.id],
+	}),
 	chapters: many(chapter),
 }));
 
@@ -117,5 +134,37 @@ export const lessonRelations = relations(lesson, ({ one }) => ({
 	chapter: one(chapter, {
 		fields: [lesson.chapterId],
 		references: [chapter.id],
+	}),
+}));
+
+export const achievement = pgTable("achievement", {
+	id: text("id").primaryKey(),
+	title: text("title").notNull(),
+	description: text("description").notNull(),
+	icon: text("icon").notNull(), // e.g., 'Award', 'Zap', 'Shield'
+	conditionType: text("condition_type").notNull(), // e.g., 'xp', 'lessons', 'streak'
+	conditionValue: integer("condition_value").notNull(),
+	createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const userAchievement = pgTable("user_achievement", {
+	id: text("id").primaryKey(),
+	userId: text("user_id").notNull().references(() => user.id),
+	achievementId: text("achievement_id").notNull().references(() => achievement.id),
+	unlockedAt: timestamp("unlocked_at").defaultNow().notNull(),
+});
+
+export const achievementRelations = relations(achievement, ({ many }) => ({
+	userAchievements: many(userAchievement),
+}));
+
+export const userAchievementRelations = relations(userAchievement, ({ one }) => ({
+	user: one(user, {
+		fields: [userAchievement.userId],
+		references: [user.id],
+	}),
+	achievement: one(achievement, {
+		fields: [userAchievement.achievementId],
+		references: [achievement.id],
 	}),
 }));

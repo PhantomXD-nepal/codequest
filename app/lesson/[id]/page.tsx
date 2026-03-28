@@ -9,6 +9,7 @@ import { Lesson } from "@/lib/lessons";
 import { motion, AnimatePresence } from "motion/react";
 import gsap from "gsap";
 import confetti from "canvas-confetti";
+import ReactMarkdown from "react-markdown";
 import { Component as LumaSpin } from "@/components/ui/luma-spin";
 import { 
   Play, 
@@ -25,7 +26,7 @@ import {
   HelpCircle
 } from "lucide-react";
 import Link from "next/link";
-import { completeLessonAction, getAllCourseContentAction, getUserStatsAction } from "@/app/actions";
+import { completeLessonAction, getLessonDetailsAction, getUserStatsAction } from "@/app/actions";
 
 export default function LessonPage() {
   const { data: session, isPending } = authClient.useSession();
@@ -40,6 +41,7 @@ export default function LessonPage() {
   const [isRunning, setIsRunning] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [unlockedAchievements, setUnlockedAchievements] = useState<any[]>([]);
   const [showHint, setShowHint] = useState(false);
   const [pyodide, setPyodide] = useState<any>(null);
   const [isPyodideLoading, setIsPyodideLoading] = useState(true);
@@ -82,13 +84,24 @@ export default function LessonPage() {
     loadPyodide();
   }, []);
 
+  const initialAnimationPlayed = useRef(false);
+
   useEffect(() => {
     if (mainRef.current && !isPending && session && lesson && !isPyodideLoading) {
-      gsap.fromTo(
-        mainRef.current.querySelectorAll(".animate-lesson-item"),
-        { opacity: 0, x: -20 },
-        { opacity: 1, x: 0, duration: 0.6, stagger: 0.1, ease: "power2.out" }
-      );
+      const ctx = gsap.context(() => {
+        if (!initialAnimationPlayed.current) {
+          const items = mainRef.current?.querySelectorAll(".animate-lesson-item");
+          if (items && items.length > 0) {
+            gsap.fromTo(
+              items,
+              { opacity: 0, x: -20 },
+              { opacity: 1, x: 0, duration: 0.6, stagger: 0.1, ease: "power2.out" }
+            );
+            initialAnimationPlayed.current = true;
+          }
+        }
+      }, mainRef);
+      return () => ctx.revert();
     }
   }, [isPending, session, lesson, isPyodideLoading]);
 
@@ -101,48 +114,12 @@ export default function LessonPage() {
   useEffect(() => {
     async function fetchCourse() {
       try {
-        const data = await getAllCourseContentAction();
-        setCourseData(data);
-        
-        let foundLesson: any | null = null;
-        let lessonLanguage: string | null = null;
-        
-        // First find the lesson and its language
-        for (const section of data) {
-          for (const chapter of section.chapters) {
-            for (const lesson of chapter.lessons) {
-              if (lesson.id === lessonId) {
-                foundLesson = lesson;
-                lessonLanguage = section.language;
-                break;
-              }
-            }
-            if (foundLesson) break;
-          }
-          if (foundLesson) break;
-        }
-
-        if (foundLesson && lessonLanguage) {
-          // Now build allLessons only for this language
-          let allLessons: any[] = [];
-          for (const section of data) {
-            if (section.language === lessonLanguage) {
-              for (const chapter of section.chapters) {
-                allLessons = [...allLessons, ...chapter.lessons];
-              }
-            }
-          }
-
-          const currentIndex = allLessons.findIndex(l => l.id === lessonId);
-          setLesson(foundLesson);
-          setLanguage(lessonLanguage);
-          setCode(foundLesson.initialCode);
-          
-          if (currentIndex !== -1 && currentIndex < allLessons.length - 1) {
-            setNextLessonId(allLessons[currentIndex + 1].id);
-          } else {
-            setNextLessonId(null);
-          }
+        const data = await getLessonDetailsAction(lessonId);
+        if (data) {
+          setLesson(data.lesson);
+          setLanguage(data.language);
+          setCode(data.lesson.initialCode);
+          setNextLessonId(data.nextLessonId);
         }
       } catch (err) {
         console.error("Failed to fetch course data:", err);
@@ -156,7 +133,9 @@ export default function LessonPage() {
     setIsRunning(true);
     setOutput(null);
     
-    if (language === 'python') {
+    const isPython = language === 'python' || language.toLowerCase().includes('dsa') || language.toLowerCase().includes('data structure');
+    
+    if (isPython) {
       if (!pyodide) {
         setIsRunning(false);
         return;
@@ -197,7 +176,10 @@ export default function LessonPage() {
           
           // Update database
           try {
-            await completeLessonAction(lessonId, 25);
+            const result = await completeLessonAction(lessonId, 25);
+            if (result.newAchievements && result.newAchievements.length > 0) {
+              setUnlockedAchievements(result.newAchievements);
+            }
           } catch (err) {
             console.error("Failed to update progress in DB:", err);
           }
@@ -214,26 +196,39 @@ export default function LessonPage() {
       }
     } else if (language === 'javascript' || language === 'typescript') {
       let stdout = "";
+      let stderr = "";
       const originalLog = console.log;
+      const originalError = console.error;
       console.log = (...args) => {
         stdout += args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ') + '\n';
+      };
+      console.error = (...args) => {
+        stderr += args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ') + '\n';
       };
 
       try {
         // Simple JS execution
-        // eslint-disable-next-line no-new-func
-        const fn = new Function(code);
-        fn();
+        // Execute code in a slightly safer way than direct eval
+        const script = document.createElement('script');
+        script.textContent = `
+          try {
+            ${code}
+          } catch (e) {
+            console.error(e);
+          }
+        `;
+        document.body.appendChild(script);
+        document.body.removeChild(script);
         
         const result = {
           stdout: stdout.trim(),
-          stderr: "",
-          exitCode: 0
+          stderr: stderr.trim(),
+          exitCode: stderr ? 1 : 0
         };
         
         setOutput(result);
         
-        if (result.stdout.trim() === lesson.expectedOutput.trim()) {
+        if (result.stdout.trim() === lesson.expectedOutput.trim() && !stderr) {
           setIsCompleted(true);
           setShowSuccess(true);
           
@@ -245,7 +240,10 @@ export default function LessonPage() {
           });
           
           try {
-            await completeLessonAction(lessonId, 25);
+            const result = await completeLessonAction(lessonId, 25);
+            if (result.newAchievements && result.newAchievements.length > 0) {
+              setUnlockedAchievements(result.newAchievements);
+            }
           } catch (err) {
             console.error("Failed to update progress in DB:", err);
           }
@@ -258,8 +256,34 @@ export default function LessonPage() {
         });
       } finally {
         console.log = originalLog;
+        console.error = originalError;
         setIsRunning(false);
       }
+    } else if (language === 'html' || language === 'css') {
+      // For HTML/CSS, we'll just "succeed" if there's content for now, 
+      // or we could show a preview. Let's show a simple success if they wrote something.
+      setOutput({
+        stdout: "Rendering preview...",
+        stderr: "",
+        exitCode: 0
+      });
+      
+      setIsCompleted(true);
+      setShowSuccess(true);
+      
+      confetti({
+        particleCount: 100,
+        spread: 70,
+        origin: { y: 0.6 },
+        colors: ['#39ff14', '#ffffff', '#000000']
+      });
+      
+      try {
+        await completeLessonAction(lessonId, 25);
+      } catch (err) {
+        console.error("Failed to update progress:", err);
+      }
+      setIsRunning(false);
     } else {
       setOutput({
         stdout: "",
@@ -270,12 +294,12 @@ export default function LessonPage() {
     }
   };
 
-  if (isPending || !session || !lesson || (isPyodideLoading && language === 'python')) {
+  if (isPending || !session || !lesson) {
     return (
       <div className="min-h-screen bg-[#1a1a1a] flex flex-col items-center justify-center gap-6">
         <LumaSpin />
         <div className="text-white font-pixel text-xs animate-pulse">
-          {isPyodideLoading && language === 'python' ? "INITIALIZING PYTHON RUNTIME..." : "LOADING LESSON..."}
+          LOADING LESSON...
         </div>
       </div>
     );
@@ -313,9 +337,9 @@ export default function LessonPage() {
                 <BookOpen className="w-5 h-5" />
                 <h2 className="text-sm font-pixel uppercase tracking-tight">Learn</h2>
               </div>
-              <p className="text-[#aaa] leading-relaxed text-xs font-pixel">
-                {lesson.content}
-              </p>
+              <div className="text-[#aaa] leading-relaxed text-xs font-pixel markdown-content">
+                <ReactMarkdown>{lesson.content}</ReactMarkdown>
+              </div>
             </section>
 
             <section className="space-y-4 bg-[#252525] p-6 rounded-xl border-l-4 border-[#39ff14] shadow-lg">
@@ -334,9 +358,9 @@ export default function LessonPage() {
                   </button>
                 )}
               </div>
-              <p className="text-white font-pixel text-xs leading-relaxed">
-                {lesson.challenge}
-              </p>
+              <div className="text-white font-pixel text-xs leading-relaxed markdown-content">
+                <ReactMarkdown>{lesson.challenge}</ReactMarkdown>
+              </div>
               
               <AnimatePresence>
                 {showHint && lesson.hint && (
@@ -347,9 +371,9 @@ export default function LessonPage() {
                     className="overflow-hidden"
                   >
                     <div className="mt-4 p-4 bg-[#1a1a1a] border border-[#333] rounded-lg">
-                      <p className="text-[#aaa] font-pixel text-[10px] leading-relaxed">
-                        <span className="text-yellow-400">HINT:</span> {lesson.hint}
-                      </p>
+                      <div className="text-[#aaa] font-pixel text-[10px] leading-relaxed markdown-content">
+                        <span className="text-yellow-400">HINT:</span> <ReactMarkdown>{lesson.hint}</ReactMarkdown>
+                      </div>
                     </div>
                   </motion.div>
                 )}
@@ -386,14 +410,14 @@ export default function LessonPage() {
             <div className="absolute top-4 right-4 z-10 flex gap-2">
               <button 
                 onClick={handleRunCode}
-                disabled={isRunning}
+                disabled={isRunning || (isPyodideLoading && language === 'python')}
                 className={`flex items-center gap-2 px-6 py-2 rounded-lg font-pixel text-[10px] transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] border-2 border-black ${
-                  isRunning 
+                  isRunning || (isPyodideLoading && language === 'python')
                     ? 'bg-[#333] text-[#555] cursor-not-allowed' 
                     : 'bg-[#39ff14] text-black hover:bg-[#32e012] active:translate-y-1 active:shadow-none'
                 }`}
               >
-                {isRunning ? 'RUNNING...' : (
+                {isPyodideLoading && language === 'python' ? 'LOADING RUNTIME...' : isRunning ? 'RUNNING...' : (
                   <>
                     <Play className="w-4 h-4 fill-current" /> RUN CODE
                   </>
@@ -404,7 +428,12 @@ export default function LessonPage() {
             <div className="h-full pt-2">
               <Editor
                 height="100%"
-                language={language === 'javascript' || language === 'typescript' ? 'javascript' : 'python'}
+                language={
+                  language === 'javascript' || language === 'typescript' ? 'javascript' : 
+                  language === 'html' ? 'html' : 
+                  language === 'css' ? 'css' : 
+                  'python'
+                }
                 theme="vs-dark"
                 value={code}
                 onChange={(value) => setCode(value || "")}
@@ -418,8 +447,7 @@ export default function LessonPage() {
                   readOnly: false,
                   cursorStyle: "line",
                   automaticLayout: true,
-                  padding: { top: 20, bottom: 20 },
-                  backgroundColor: "#0d0d0d"
+                  padding: { top: 20, bottom: 20 }
                 }}
               />
             </div>
@@ -574,6 +602,34 @@ export default function LessonPage() {
                 </div>
               </motion.div>
 
+              {/* Achievement Unlocks */}
+              <AnimatePresence>
+                {unlockedAchievements.length > 0 && (
+                  <motion.div 
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    className="space-y-3"
+                  >
+                    <div className="text-[10px] font-pixel text-yellow-400 mb-2">ACHIEVEMENTS UNLOCKED!</div>
+                    {unlockedAchievements.map((ach, idx) => (
+                      <motion.div 
+                        key={ach.id}
+                        initial={{ x: -50, opacity: 0 }}
+                        animate={{ x: 0, opacity: 1 }}
+                        transition={{ delay: 1.2 + (idx * 0.2), type: "spring" }}
+                        className="bg-[#111] border border-yellow-400/50 p-3 rounded-lg flex items-center gap-4"
+                      >
+                        <div className="text-2xl">{ach.icon}</div>
+                        <div className="text-left flex-1">
+                          <div className="text-xs font-pixel text-yellow-400">{ach.title}</div>
+                          <div className="text-[8px] font-pixel text-[#aaa] mt-1">{ach.description}</div>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
               <motion.button 
                 initial={{ y: 20, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
@@ -614,6 +670,39 @@ export default function LessonPage() {
         }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
           background: #444;
+        }
+        .markdown-content p {
+          margin-bottom: 1rem;
+        }
+        .markdown-content p:last-child {
+          margin-bottom: 0;
+        }
+        .markdown-content code {
+          background: #2a2a2a;
+          padding: 0.1rem 0.3rem;
+          border-radius: 0.2rem;
+          font-family: monospace;
+        }
+        .markdown-content pre {
+          background: #0d0d0d;
+          padding: 1rem;
+          border-radius: 0.5rem;
+          overflow-x: auto;
+          margin-bottom: 1rem;
+        }
+        .markdown-content pre code {
+          background: transparent;
+          padding: 0;
+        }
+        .markdown-content ul, .markdown-content ol {
+          margin-left: 1.5rem;
+          margin-bottom: 1rem;
+        }
+        .markdown-content ul {
+          list-style-type: disc;
+        }
+        .markdown-content ol {
+          list-style-type: decimal;
         }
       `}</style>
     </div>

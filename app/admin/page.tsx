@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { authClient } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
-import { getUserStatsAction, getUsersAction, createSectionAction, createChapterAction, createLessonAction, importNestedCourseAction } from "@/app/actions";
+import { getUserStatsAction, getUsersAction, createSectionAction, createChapterAction, createLessonAction, importNestedCourseAction, getAchievementsAction, createAchievementAction, deleteAchievementAction } from "@/app/actions";
 import { Component as LumaSpin } from "@/components/ui/luma-spin";
 import { ArrowLeft, Users, BookOpen, Plus, Settings, Save } from "lucide-react";
 import Link from "next/link";
@@ -14,8 +14,18 @@ export default function AdminPage() {
   const router = useRouter();
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
   const [users, setUsers] = useState<any[]>([]);
-  const [activeTab, setActiveTab] = useState<'users' | 'content'>('users');
+  const [activeTab, setActiveTab] = useState<'users' | 'content' | 'achievements'>('users');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Achievements State
+  const [achievements, setAchievements] = useState<any[]>([]);
+  const [achievementForm, setAchievementForm] = useState({
+    title: '',
+    description: '',
+    icon: '🏆',
+    conditionType: 'xp',
+    conditionValue: 100
+  });
   
   // Content Form States
   const [contentType, setContentType] = useState<'section' | 'chapter' | 'lesson'>('section');
@@ -41,6 +51,8 @@ export default function AdminPage() {
           setIsAdmin(true);
           const usersList = await getUsersAction();
           setUsers(usersList);
+          const achievementsList = await getAchievementsAction();
+          setAchievements(achievementsList);
         } else {
           setIsAdmin(false);
           router.push("/dashboard");
@@ -63,13 +75,11 @@ export default function AdminPage() {
       if (contentType === 'section') {
         await createSectionAction({
           title: formData.title,
-          description: formData.description,
           language: formData.language,
         });
       } else if (contentType === 'chapter') {
         await createChapterAction({
           title: formData.title,
-          description: formData.description,
           sectionId: formData.sectionId,
         });
       } else if (contentType === 'lesson') {
@@ -176,6 +186,47 @@ export default function AdminPage() {
     }
   };
 
+  const handleAchievementSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    try {
+      await createAchievementAction({
+        title: achievementForm.title,
+        description: achievementForm.description,
+        icon: achievementForm.icon,
+        conditionType: achievementForm.conditionType,
+        conditionValue: achievementForm.conditionValue
+      });
+      alert('Achievement created successfully!');
+      setAchievementForm({
+        title: '',
+        description: '',
+        icon: '🏆',
+        conditionType: 'xp',
+        conditionValue: 100
+      });
+      const achievementsList = await getAchievementsAction();
+      setAchievements(achievementsList);
+    } catch (err) {
+      console.error("Failed to create achievement:", err);
+      alert("Failed to create achievement. Check console for details.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDeleteAchievement = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this achievement?')) return;
+    try {
+      await deleteAchievementAction(id);
+      const achievementsList = await getAchievementsAction();
+      setAchievements(achievementsList);
+    } catch (err) {
+      console.error("Failed to delete achievement:", err);
+      alert("Failed to delete achievement.");
+    }
+  };
+
   if (isPending || isAdmin === null) {
     return (
       <div className="min-h-screen bg-[#1a1a1a] flex flex-col items-center justify-center gap-6">
@@ -227,6 +278,15 @@ export default function AdminPage() {
           >
             <BookOpen className="w-4 h-4" />
             CONTENT
+          </button>
+          <button 
+            onClick={() => setActiveTab('achievements')}
+            className={`flex items-center gap-2 font-pixel text-xs px-4 py-2 rounded-lg transition-colors ${
+              activeTab === 'achievements' ? 'bg-[#39ff14] text-black' : 'text-[#888] hover:bg-[#252525] hover:text-white'
+            }`}
+          >
+            <Settings className="w-4 h-4" />
+            ACHIEVEMENTS
           </button>
         </div>
 
@@ -337,6 +397,13 @@ export default function AdminPage() {
                   >
                     ADD LESSON
                   </button>
+                  <div className="w-[1px] h-8 bg-[#333] mx-2" />
+                  <Link 
+                    href="/admin/courses"
+                    className="font-pixel text-[10px] px-4 py-2 rounded border border-[#39ff14] transition-colors bg-[#1a1a1a] text-[#39ff14] hover:bg-[#39ff14] hover:text-black"
+                  >
+                    MANAGE COURSES
+                  </Link>
                 </div>
               </div>
               
@@ -498,6 +565,129 @@ export default function AdminPage() {
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        )}
+
+        {/* Achievements Tab */}
+        {activeTab === 'achievements' && (
+          <div className="space-y-6">
+            <div className="bg-[#1e1e1e] border-4 border-[#000] p-6 rounded-xl shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
+              <h2 className="text-sm font-pixel text-[#39ff14] mb-6">CREATE ACHIEVEMENT</h2>
+              <form onSubmit={handleAchievementSubmit} className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-pixel text-[#888]">TITLE</label>
+                    <input 
+                      type="text" 
+                      value={achievementForm.title}
+                      onChange={(e) => setAchievementForm({...achievementForm, title: e.target.value})}
+                      className="w-full bg-[#0d0d0d] border border-[#333] rounded-lg p-3 text-white font-sans focus:outline-none focus:border-[#39ff14]"
+                      placeholder="e.g., Python Master"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-pixel text-[#888]">ICON (EMOJI OR URL)</label>
+                    <input 
+                      type="text" 
+                      value={achievementForm.icon}
+                      onChange={(e) => setAchievementForm({...achievementForm, icon: e.target.value})}
+                      className="w-full bg-[#0d0d0d] border border-[#333] rounded-lg p-3 text-white font-sans focus:outline-none focus:border-[#39ff14]"
+                      placeholder="e.g., 🐍"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] font-pixel text-[#888]">DESCRIPTION</label>
+                  <input 
+                    type="text" 
+                    value={achievementForm.description}
+                    onChange={(e) => setAchievementForm({...achievementForm, description: e.target.value})}
+                    className="w-full bg-[#0d0d0d] border border-[#333] rounded-lg p-3 text-white font-sans focus:outline-none focus:border-[#39ff14]"
+                    placeholder="e.g., Complete all Python lessons."
+                    required
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-pixel text-[#888]">CONDITION TYPE</label>
+                    <select 
+                      value={achievementForm.conditionType}
+                      onChange={(e) => setAchievementForm({...achievementForm, conditionType: e.target.value})}
+                      className="w-full bg-[#0d0d0d] border border-[#333] rounded-lg p-3 text-white font-sans focus:outline-none focus:border-[#39ff14]"
+                    >
+                      <option value="xp">XP Earned</option>
+                      <option value="lessons">Lessons Completed</option>
+                      <option value="streak">Day Streak</option>
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-pixel text-[#888]">CONDITION VALUE</label>
+                    <input 
+                      type="number" 
+                      value={achievementForm.conditionValue}
+                      onChange={(e) => setAchievementForm({...achievementForm, conditionValue: parseInt(e.target.value) || 0})}
+                      className="w-full bg-[#0d0d0d] border border-[#333] rounded-lg p-3 text-white font-sans focus:outline-none focus:border-[#39ff14]"
+                      placeholder="e.g., 1000"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="pt-4 border-t border-[#333] flex justify-end">
+                  <button 
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="bg-[#39ff14] text-black font-pixel text-[10px] px-6 py-3 rounded-lg flex items-center gap-2 hover:bg-[#32e012] transition-colors shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] border-2 border-black disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <Save className="w-4 h-4" />
+                    {isSubmitting ? 'SAVING...' : 'SAVE ACHIEVEMENT'}
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            <div className="bg-[#1e1e1e] border-4 border-[#000] p-6 rounded-xl shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
+              <h2 className="text-sm font-pixel text-[#39ff14] mb-6">EXISTING ACHIEVEMENTS</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {achievements.map((ach) => (
+                  <div key={ach.id} className="bg-[#0d0d0d] border border-[#333] rounded-lg p-4 flex flex-col justify-between">
+                    <div>
+                      <div className="flex items-center gap-3 mb-2">
+                        <div className="w-10 h-10 rounded-lg bg-[#1a1a1a] border border-[#333] flex items-center justify-center text-xl">
+                          {ach.icon}
+                        </div>
+                        <div>
+                          <h3 className="font-pixel text-[10px] text-white">{ach.title}</h3>
+                          <p className="text-[10px] text-[#888] font-sans">{ach.description}</p>
+                        </div>
+                      </div>
+                      <div className="mt-4 flex gap-2">
+                        <span className="px-2 py-1 bg-[#1a1a1a] border border-[#333] rounded text-[8px] font-pixel text-[#39ff14]">
+                          {ach.conditionType.toUpperCase()}: {ach.conditionValue}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="mt-4 pt-4 border-t border-[#333] flex justify-end">
+                      <button 
+                        onClick={() => handleDeleteAchievement(ach.id)}
+                        className="text-red-500 hover:text-red-400 font-pixel text-[8px] transition-colors"
+                      >
+                        DELETE
+                      </button>
+                    </div>
+                  </div>
+                ))}
+                {achievements.length === 0 && (
+                  <div className="col-span-full text-center py-8 text-[#888] font-pixel text-[10px]">
+                    NO ACHIEVEMENTS FOUND
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         )}

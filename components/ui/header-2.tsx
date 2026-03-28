@@ -28,16 +28,17 @@ export function Header() {
 	const links = [
 		...(session ? [{ label: 'Dashboard', href: '/dashboard' }] : []),
 		{
+			label: 'Leaderboard',
+			href: '/leaderboard',
+		},
+		...(session ? [{ label: 'Profile', href: '/profile' }] : []),
+		{
 			label: 'Features',
-			href: '#features',
+			href: '/#features',
 		},
 		{
 			label: 'Pricing',
-			href: '#pricing',
-		},
-		{
-			label: 'About',
-			href: '#about',
+			href: '/#pricing',
 		},
 	];
 
