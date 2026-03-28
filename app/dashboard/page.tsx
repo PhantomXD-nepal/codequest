@@ -1,16 +1,17 @@
 "use client";
 
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef,useCallback } from "react";
 import { authClient } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
 import { Section, Lesson } from "@/lib/lessons";
 import { motion } from "motion/react";
-import { Hexagon, Check, Lock, Play, Trophy, Star, Zap, User, Settings } from "lucide-react";
+import { Hexagon, Check, Lock, Play, Trophy, Star, Zap, User, Settings, Plus, X, Save } from "lucide-react";
 import Link from "next/link";
 import gsap from "gsap";
 import { Component as LumaSpin } from "@/components/ui/luma-spin";
 import Image from "next/image";
-import { getUserStatsAction, makeMeAdminAction, getCourseContentAction } from "@/app/actions";
+import { getUserStatsAction, makeMeAdminAction, getCourseContentAction, createChapterAction, createLessonAction, createSectionAction } from "@/app/actions";
+import { Editor } from "@monaco-editor/react";
 
 export default function DashboardPage() {
   const { data: session, isPending } = authClient.useSession();
@@ -23,6 +24,34 @@ export default function DashboardPage() {
   const [isLoadingCourse, setIsLoadingCourse] = useState(true);
   const [language, setLanguage] = useState('python');
   const mainRef = useRef<HTMLDivElement>(null);
+
+  // Admin Editor State
+  const [isEditorOpen, setIsEditorOpen] = useState(false);
+  const [editorType, setEditorType] = useState<'section' | 'chapter' | 'lesson'>('lesson');
+  const [parentId, setParentId] = useState<string | null>(null);
+  const [editorData, setEditorData] = useState({
+    title: '',
+    description: '',
+    content: '',
+    challenge: '',
+    hint: '',
+    initialCode: '',
+    expectedOutput: '',
+    type: 'beginner'
+  });
+  const [isSaving, setIsSaving] = useState(false);
+
+  const fetchCourse = useCallback(async () => {
+    setIsLoadingCourse(true);
+    try {
+      const data = await getCourseContentAction(language);
+      setCourseData(data);
+    } catch (err) {
+      console.error("Failed to fetch course data:", err);
+    } finally {
+      setIsLoadingCourse(false);
+    }
+  }, [language]);
 
   useEffect(() => {
     // Fetch stats from DB
@@ -40,26 +69,9 @@ export default function DashboardPage() {
 
     if (session) {
       fetchStats();
-    }
-  }, [session]);
-
-  useEffect(() => {
-    async function fetchCourse() {
-      setIsLoadingCourse(true);
-      try {
-        const data = await getCourseContentAction(language);
-        setCourseData(data);
-      } catch (err) {
-        console.error("Failed to fetch course data:", err);
-      } finally {
-        setIsLoadingCourse(false);
-      }
-    }
-    
-    if (session) {
       fetchCourse();
     }
-  }, [session, language]);
+  }, [session, fetchCourse]);
 
   const handleMakeAdmin = async () => {
     try {
@@ -68,6 +80,52 @@ export default function DashboardPage() {
       alert("You are now an admin!");
     } catch (err) {
       console.error(err);
+    }
+  };
+
+  const handleSaveContent = async () => {
+    setIsSaving(true);
+    try {
+      if (editorType === 'section') {
+        await createSectionAction({
+          title: editorData.title,
+          language: language
+        });
+      } else if (editorType === 'chapter' && parentId) {
+        await createChapterAction({
+          title: editorData.title,
+          sectionId: parentId
+        });
+      } else if (editorType === 'lesson' && parentId) {
+        await createLessonAction({
+          title: editorData.title,
+          description: editorData.description,
+          content: editorData.content,
+          challenge: editorData.challenge,
+          hint: editorData.hint,
+          initialCode: editorData.initialCode,
+          expectedOutput: editorData.expectedOutput,
+          type: editorData.type,
+          chapterId: parentId
+        });
+      }
+      setIsEditorOpen(false);
+      fetchCourse();
+      setEditorData({
+        title: '',
+        description: '',
+        content: '',
+        challenge: '',
+        hint: '',
+        initialCode: '',
+        expectedOutput: '',
+        type: 'beginner'
+      });
+    } catch (err) {
+      console.error("Failed to save content:", err);
+      alert("Failed to save content. Check console.");
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -99,23 +157,190 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-[#0f0f0f] text-white font-sans selection:bg-[#39ff14] selection:text-black relative">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(57,255,20,0.03)_0%,transparent_50%)] pointer-events-none" />
+      
+      {/* Admin Editor Modal */}
+      {isEditorOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-[#1a1a1a] border-2 border-[#39ff14]/30 rounded-xl w-full max-w-4xl h-[90vh] flex flex-col shadow-[0_0_50px_rgba(57,255,20,0.1)] overflow-hidden"
+          >
+            <div className="p-4 border-b border-[#333] flex items-center justify-between bg-[#222]">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-[#39ff14] rounded flex items-center justify-center">
+                  <Plus className="text-black w-5 h-5" />
+                </div>
+                <h2 className="font-pixel text-sm text-[#39ff14]">ADD NEW {editorType.toUpperCase()}</h2>
+              </div>
+              <button 
+                onClick={() => setIsEditorOpen(false)}
+                className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-pixel text-[#888]">TITLE</label>
+                    <input 
+                      type="text"
+                      value={editorData.title}
+                      onChange={(e) => setEditorData({...editorData, title: e.target.value})}
+                      className="w-full bg-[#0d0d0d] border border-[#333] rounded-lg p-3 text-white font-pixel text-xs focus:outline-none focus:border-[#39ff14]"
+                      placeholder="Enter title..."
+                    />
+                  </div>
+                  {editorType === 'lesson' && (
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-pixel text-[#888]">DESCRIPTION</label>
+                      <textarea 
+                        value={editorData.description}
+                        onChange={(e) => setEditorData({...editorData, description: e.target.value})}
+                        className="w-full bg-[#0d0d0d] border border-[#333] rounded-lg p-3 text-white font-pixel text-xs focus:outline-none focus:border-[#39ff14] h-24 resize-none"
+                        placeholder="Enter description..."
+                      />
+                    </div>
+                  )}
+                  {editorType === 'lesson' && (
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-pixel text-[#888]">LESSON TYPE</label>
+                      <select 
+                        value={editorData.type}
+                        onChange={(e) => setEditorData({...editorData, type: e.target.value})}
+                        className="w-full bg-[#0d0d0d] border border-[#333] rounded-lg p-3 text-white font-pixel text-xs focus:outline-none focus:border-[#39ff14]"
+                      >
+                        <option value="beginner">BEGINNER</option>
+                        <option value="intermediate">INTERMEDIATE</option>
+                        <option value="advanced">ADVANCED</option>
+                        <option value="challenge">CHALLENGE</option>
+                      </select>
+                    </div>
+                  )}
+                </div>
+
+                {editorType === 'lesson' && (
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-pixel text-[#888]">CHALLENGE INSTRUCTIONS (MARKDOWN)</label>
+                      <textarea 
+                        value={editorData.challenge}
+                        onChange={(e) => setEditorData({...editorData, challenge: e.target.value})}
+                        className="w-full bg-[#0d0d0d] border border-[#333] rounded-lg p-3 text-white font-pixel text-xs focus:outline-none focus:border-[#39ff14] h-32 resize-none"
+                        placeholder="What should the user do?"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-pixel text-[#888]">HINT (OPTIONAL)</label>
+                      <input 
+                        type="text"
+                        value={editorData.hint}
+                        onChange={(e) => setEditorData({...editorData, hint: e.target.value})}
+                        className="w-full bg-[#0d0d0d] border border-[#333] rounded-lg p-3 text-white font-pixel text-xs focus:outline-none focus:border-[#39ff14]"
+                        placeholder="Need a hint?"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-pixel text-[#888]">EXPECTED OUTPUT</label>
+                      <input 
+                        type="text"
+                        value={editorData.expectedOutput}
+                        onChange={(e) => setEditorData({...editorData, expectedOutput: e.target.value})}
+                        className="w-full bg-[#0d0d0d] border border-[#333] rounded-lg p-3 text-white font-pixel text-xs focus:outline-none focus:border-[#39ff14]"
+                        placeholder="What should the code print?"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {editorType === 'lesson' && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2 flex flex-col h-[300px]">
+                    <label className="text-[10px] font-pixel text-[#888]">LESSON CONTENT (MARKDOWN)</label>
+                    <div className="flex-1 border border-[#333] rounded-lg overflow-hidden">
+                      <Editor
+                        height="100%"
+                        defaultLanguage="markdown"
+                        theme="vs-dark"
+                        value={editorData.content}
+                        onChange={(val) => setEditorData({...editorData, content: val || ''})}
+                        options={{ minimap: { enabled: false }, fontSize: 12, padding: { top: 10 } }}
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2 flex flex-col h-[300px]">
+                    <label className="text-[10px] font-pixel text-[#888]">INITIAL CODE</label>
+                    <div className="flex-1 border border-[#333] rounded-lg overflow-hidden">
+                      <Editor
+                        height="100%"
+                        defaultLanguage={language}
+                        theme="vs-dark"
+                        value={editorData.initialCode}
+                        onChange={(val) => setEditorData({...editorData, initialCode: val || ''})}
+                        options={{ minimap: { enabled: false }, fontSize: 12, padding: { top: 10 } }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="p-4 border-t border-[#333] bg-[#222] flex justify-end gap-3">
+              <button 
+                onClick={() => setIsEditorOpen(false)}
+                className="px-6 py-2 rounded-lg font-pixel text-[10px] text-[#888] hover:text-white transition-colors"
+              >
+                CANCEL
+              </button>
+              <button 
+                onClick={handleSaveContent}
+                disabled={isSaving}
+                className="px-8 py-2 bg-[#39ff14] text-black rounded-lg font-pixel text-[10px] flex items-center gap-2 hover:bg-[#32e012] transition-colors disabled:opacity-50"
+              >
+                {isSaving ? <LumaSpin /> : <Save className="w-3 h-3" />}
+                SAVE {editorType.toUpperCase()}
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
       <main ref={mainRef} className="max-w-6xl mx-auto px-4 pt-12 pb-12 grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-8 relative z-10">
         {/* Learning Path */}
         <div className="space-y-12">
-          {/* Language Selector */}
-          <div className="flex items-center gap-4 bg-[#1e1e1e] p-4 rounded-xl border-2 border-[#333] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] animate-item">
-            <label className="font-pixel text-[10px] text-[#888]">SELECT LANGUAGE:</label>
-            <select 
-              value={language}
-              onChange={(e) => setLanguage(e.target.value)}
-              className="bg-[#0d0d0d] border border-[#333] rounded-lg p-2 text-white font-pixel text-xs focus:outline-none focus:border-[#39ff14]"
-            >
-              <option value="python">PYTHON</option>
-              <option value="javascript">JAVASCRIPT</option>
-              <option value="typescript">TYPESCRIPT</option>
-              <option value="html">HTML/CSS</option>
-              <option value="sql">SQL</option>
-            </select>
+          {/* Language Selector & Add Section */}
+          <div className="flex items-center justify-between gap-4 bg-[#1e1e1e] p-4 rounded-xl border-2 border-[#333] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] animate-item">
+            <div className="flex items-center gap-4">
+              <label className="font-pixel text-[10px] text-[#888]">SELECT LANGUAGE:</label>
+              <select 
+                value={language}
+                onChange={(e) => setLanguage(e.target.value)}
+                className="bg-[#0d0d0d] border border-[#333] rounded-lg p-2 text-white font-pixel text-xs focus:outline-none focus:border-[#39ff14]"
+              >
+                <option value="python">PYTHON</option>
+                <option value="javascript">JAVASCRIPT</option>
+                <option value="typescript">TYPESCRIPT</option>
+                <option value="html">HTML/CSS</option>
+                <option value="sql">SQL</option>
+              </select>
+            </div>
+            {role === 'admin' && (
+              <button 
+                onClick={() => {
+                  setEditorType('section');
+                  setParentId(null);
+                  setIsEditorOpen(true);
+                }}
+                className="bg-[#39ff14] text-black font-pixel text-[8px] px-3 py-2 rounded flex items-center gap-2 hover:bg-[#32e012] transition-colors"
+              >
+                <Plus className="w-3 h-3" />
+                ADD SECTION
+              </button>
+            )}
           </div>
 
           {isLoadingCourse ? (
@@ -126,13 +351,28 @@ export default function DashboardPage() {
             <div className="text-center py-12 text-[#888] font-pixel text-xs">NO COURSE DATA FOUND</div>
           ) : courseData.map((section, sIdx) => (
             <div key={section.id} className="space-y-8 animate-item">
-              <div className="bg-[#1e1e1e] border-b-4 border-[#000000] p-6 rounded-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-                <h2 className="text-[10px] font-pixel text-[#888] uppercase tracking-widest mb-2">
-                  {section.id.replace('-', ' ')}
-                </h2>
-                <h1 className="text-2xl font-pixel text-[#39ff14] drop-shadow-[2px_2px_0px_rgba(0,0,0,1)]">
-                  {section.title}
-                </h1>
+              <div className="bg-[#1e1e1e] border-b-4 border-[#000000] p-6 rounded-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] flex justify-between items-center">
+                <div>
+                  <h2 className="text-[10px] font-pixel text-[#888] uppercase tracking-widest mb-2">
+                    {section.id.replace('-', ' ')}
+                  </h2>
+                  <h1 className="text-2xl font-pixel text-[#39ff14] drop-shadow-[2px_2px_0px_rgba(0,0,0,1)]">
+                    {section.title}
+                  </h1>
+                </div>
+                {role === 'admin' && (
+                  <button 
+                    onClick={() => {
+                      setEditorType('chapter');
+                      setParentId(section.id);
+                      setIsEditorOpen(true);
+                    }}
+                    className="p-2 bg-[#333] rounded-lg border border-[#444] hover:border-[#39ff14]/50 transition-colors"
+                    title="Add Chapter"
+                  >
+                    <Plus className="w-5 h-5 text-[#39ff14]" />
+                  </button>
+                )}
               </div>
 
               <div className="relative flex flex-col items-center space-y-16 py-8">
@@ -141,8 +381,23 @@ export default function DashboardPage() {
 
                 {section.chapters.map((chapter: any, cIdx: number) => (
                   <div key={chapter.id} className="w-full flex flex-col items-center space-y-12 relative z-10 animate-item">
-                    <div className="bg-[#252525] px-4 py-1 rounded-full border border-[#333] text-[10px] font-pixel text-[#aaa] uppercase">
-                      {chapter.title}
+                    <div className="flex items-center gap-4">
+                      <div className="bg-[#252525] px-4 py-1 rounded-full border border-[#333] text-[10px] font-pixel text-[#aaa] uppercase">
+                        {chapter.title}
+                      </div>
+                      {role === 'admin' && (
+                        <button 
+                          onClick={() => {
+                            setEditorType('lesson');
+                            setParentId(chapter.id);
+                            setIsEditorOpen(true);
+                          }}
+                          className="w-6 h-6 bg-[#333] rounded flex items-center justify-center border border-[#444] hover:border-[#39ff14]/50 transition-colors"
+                          title="Add Lesson"
+                        >
+                          <Plus className="w-3 h-3 text-[#39ff14]" />
+                        </button>
+                      )}
                     </div>
 
                     {chapter.lessons.map((lesson: any, lIdx: number) => {

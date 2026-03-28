@@ -1,4 +1,5 @@
 import { pgTable, text, timestamp, boolean, integer } from "drizzle-orm/pg-core";
+import { relations } from "drizzle-orm";
 
 export const user = pgTable("user", {
 	id: text("id").primaryKey(),
@@ -12,6 +13,10 @@ export const user = pgTable("user", {
 	xp: integer("xp").default(0).notNull(),
 	streak: integer("streak").default(0).notNull(),
 });
+
+export const userRelations = relations(user, ({ many }) => ({
+	progress: many(userProgress),
+}));
 
 export const session = pgTable("session", {
 	id: text("id").primaryKey(),
@@ -61,6 +66,13 @@ export const userProgress = pgTable("user_progress", {
 	completedAt: timestamp("completed_at"),
 });
 
+export const userProgressRelations = relations(userProgress, ({ one }) => ({
+	user: one(user, {
+		fields: [userProgress.userId],
+		references: [user.id],
+	}),
+}));
+
 export const section = pgTable("section", {
 	id: text("id").primaryKey(),
 	title: text("title").notNull(),
@@ -68,12 +80,24 @@ export const section = pgTable("section", {
 	order: integer("order").notNull().default(0),
 });
 
+export const sectionRelations = relations(section, ({ many }) => ({
+	chapters: many(chapter),
+}));
+
 export const chapter = pgTable("chapter", {
 	id: text("id").primaryKey(),
 	sectionId: text("section_id").notNull().references(() => section.id),
 	title: text("title").notNull(),
 	order: integer("order").notNull().default(0),
 });
+
+export const chapterRelations = relations(chapter, ({ one, many }) => ({
+	section: one(section, {
+		fields: [chapter.sectionId],
+		references: [section.id],
+	}),
+	lessons: many(lesson),
+}));
 
 export const lesson = pgTable("lesson", {
 	id: text("id").primaryKey(),
@@ -88,3 +112,10 @@ export const lesson = pgTable("lesson", {
 	type: text("type").notNull(),
 	order: integer("order").notNull().default(0),
 });
+
+export const lessonRelations = relations(lesson, ({ one }) => ({
+	chapter: one(chapter, {
+		fields: [lesson.chapterId],
+		references: [chapter.id],
+	}),
+}));

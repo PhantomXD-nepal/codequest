@@ -170,34 +170,46 @@ export async function makeMeAdminAction() {
   return { success: true };
 }
 
-export async function createSectionAction(data: { title: string; description: string; language?: string }) {
+export async function createSectionAction(data: { title: string; language?: string }) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user) throw new Error("Unauthorized");
   
   const currentUser = await db.query.user.findFirst({ where: eq(user.id, session.user.id) });
   if (currentUser?.role !== 'admin') throw new Error("Unauthorized");
 
+  const existingSections = await db.query.section.findMany({
+    where: eq(section.language, data.language || 'python'),
+  });
+  const maxOrder = existingSections.reduce((max, s) => Math.max(max, s.order), -1);
+
   const newSection = await db.insert(section).values({
     id: crypto.randomUUID(),
     title: data.title,
     language: data.language || 'python',
+    order: maxOrder + 1,
   }).returning();
 
   revalidateTag('course-content');
   return newSection[0];
 }
 
-export async function createChapterAction(data: { title: string; description: string; sectionId: string }) {
+export async function createChapterAction(data: { title: string; sectionId: string }) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user) throw new Error("Unauthorized");
   
   const currentUser = await db.query.user.findFirst({ where: eq(user.id, session.user.id) });
   if (currentUser?.role !== 'admin') throw new Error("Unauthorized");
 
+  const existingChapters = await db.query.chapter.findMany({
+    where: eq(chapter.sectionId, data.sectionId),
+  });
+  const maxOrder = existingChapters.reduce((max, c) => Math.max(max, c.order), -1);
+
   const newChapter = await db.insert(chapter).values({
     id: crypto.randomUUID(),
     title: data.title,
     sectionId: data.sectionId,
+    order: maxOrder + 1,
   }).returning();
 
   revalidateTag('course-content');
@@ -268,6 +280,11 @@ export async function createLessonAction(data: {
   const currentUser = await db.query.user.findFirst({ where: eq(user.id, session.user.id) });
   if (currentUser?.role !== 'admin') throw new Error("Unauthorized");
 
+  const existingLessons = await db.query.lesson.findMany({
+    where: eq(lesson.chapterId, data.chapterId),
+  });
+  const maxOrder = existingLessons.reduce((max, l) => Math.max(max, l.order), -1);
+
   const newLesson = await db.insert(lesson).values({
     id: crypto.randomUUID(),
     title: data.title,
@@ -279,6 +296,7 @@ export async function createLessonAction(data: {
     expectedOutput: data.expectedOutput,
     type: data.type,
     chapterId: data.chapterId,
+    order: maxOrder + 1,
   }).returning();
 
   revalidateTag('course-content');
