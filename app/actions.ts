@@ -302,3 +302,74 @@ export async function createLessonAction(data: {
   revalidateTag('course-content');
   return newLesson[0];
 }
+
+export async function updateSectionAction(id: string, data: { title: string; language?: string }) {
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session?.user) throw new Error("Unauthorized");
+  
+  const currentUser = await db.query.user.findFirst({ where: eq(user.id, session.user.id) });
+  if (currentUser?.role !== 'admin') throw new Error("Unauthorized");
+
+  const updatedSection = await db.update(section)
+    .set({
+      title: data.title,
+      language: data.language,
+    })
+    .where(eq(section.id, id))
+    .returning();
+
+  revalidateTag('course-content');
+  return updatedSection[0];
+}
+
+export async function updateChapterAction(id: string, data: { title: string }) {
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session?.user) throw new Error("Unauthorized");
+  
+  const currentUser = await db.query.user.findFirst({ where: eq(user.id, session.user.id) });
+  if (currentUser?.role !== 'admin') throw new Error("Unauthorized");
+
+  const updatedChapter = await db.update(chapter)
+    .set({
+      title: data.title,
+    })
+    .where(eq(chapter.id, id))
+    .returning();
+
+  revalidateTag('course-content');
+  return updatedChapter[0];
+}
+
+export async function updateLessonAction(id: string, data: { 
+  title: string; 
+  description: string; 
+  content: string;
+  challenge: string;
+  hint?: string;
+  initialCode: string;
+  expectedOutput: string;
+  type: string;
+}) {
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session?.user) throw new Error("Unauthorized");
+  
+  const currentUser = await db.query.user.findFirst({ where: eq(user.id, session.user.id) });
+  if (currentUser?.role !== 'admin') throw new Error("Unauthorized");
+
+  const updatedLesson = await db.update(lesson)
+    .set({
+      title: data.title,
+      description: data.description,
+      content: data.content,
+      challenge: data.challenge,
+      hint: data.hint,
+      initialCode: data.initialCode,
+      expectedOutput: data.expectedOutput,
+      type: data.type,
+    })
+    .where(eq(lesson.id, id))
+    .returning();
+
+  revalidateTag('course-content');
+  return updatedLesson[0];
+}

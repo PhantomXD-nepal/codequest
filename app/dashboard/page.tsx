@@ -5,12 +5,12 @@ import { authClient } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
 import { Section, Lesson } from "@/lib/lessons";
 import { motion } from "motion/react";
-import { Hexagon, Check, Lock, Play, Trophy, Star, Zap, User, Settings, Plus, X, Save } from "lucide-react";
+import { Hexagon, Check, Lock, Play, Trophy, Star, Zap, User, Settings, Plus, X, Save, Edit } from "lucide-react";
 import Link from "next/link";
 import gsap from "gsap";
 import { Component as LumaSpin } from "@/components/ui/luma-spin";
 import Image from "next/image";
-import { getUserStatsAction, makeMeAdminAction, getCourseContentAction, createChapterAction, createLessonAction, createSectionAction } from "@/app/actions";
+import { getUserStatsAction, makeMeAdminAction, getCourseContentAction, createChapterAction, createLessonAction, createSectionAction, updateChapterAction, updateLessonAction, updateSectionAction } from "@/app/actions";
 import { Editor } from "@monaco-editor/react";
 
 export default function DashboardPage() {
@@ -29,6 +29,7 @@ export default function DashboardPage() {
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [editorType, setEditorType] = useState<'section' | 'chapter' | 'lesson'>('lesson');
   const [parentId, setParentId] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [editorData, setEditorData] = useState({
     title: '',
     description: '',
@@ -87,29 +88,56 @@ export default function DashboardPage() {
     setIsSaving(true);
     try {
       if (editorType === 'section') {
-        await createSectionAction({
-          title: editorData.title,
-          language: language
-        });
-      } else if (editorType === 'chapter' && parentId) {
-        await createChapterAction({
-          title: editorData.title,
-          sectionId: parentId
-        });
-      } else if (editorType === 'lesson' && parentId) {
-        await createLessonAction({
-          title: editorData.title,
-          description: editorData.description,
-          content: editorData.content,
-          challenge: editorData.challenge,
-          hint: editorData.hint,
-          initialCode: editorData.initialCode,
-          expectedOutput: editorData.expectedOutput,
-          type: editorData.type,
-          chapterId: parentId
-        });
+        if (editingId) {
+          await updateSectionAction(editingId, {
+            title: editorData.title,
+            language: language
+          });
+        } else {
+          await createSectionAction({
+            title: editorData.title,
+            language: language
+          });
+        }
+      } else if (editorType === 'chapter') {
+        if (editingId) {
+          await updateChapterAction(editingId, {
+            title: editorData.title
+          });
+        } else if (parentId) {
+          await createChapterAction({
+            title: editorData.title,
+            sectionId: parentId
+          });
+        }
+      } else if (editorType === 'lesson') {
+        if (editingId) {
+          await updateLessonAction(editingId, {
+            title: editorData.title,
+            description: editorData.description,
+            content: editorData.content,
+            challenge: editorData.challenge,
+            hint: editorData.hint,
+            initialCode: editorData.initialCode,
+            expectedOutput: editorData.expectedOutput,
+            type: editorData.type,
+          });
+        } else if (parentId) {
+          await createLessonAction({
+            title: editorData.title,
+            description: editorData.description,
+            content: editorData.content,
+            challenge: editorData.challenge,
+            hint: editorData.hint,
+            initialCode: editorData.initialCode,
+            expectedOutput: editorData.expectedOutput,
+            type: editorData.type,
+            chapterId: parentId
+          });
+        }
       }
       setIsEditorOpen(false);
+      setEditingId(null);
       fetchCourse();
       setEditorData({
         title: '',
@@ -169,12 +197,15 @@ export default function DashboardPage() {
             <div className="p-4 border-b border-[#333] flex items-center justify-between bg-[#222]">
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 bg-[#39ff14] rounded flex items-center justify-center">
-                  <Plus className="text-black w-5 h-5" />
+                  {editingId ? <Edit className="text-black w-5 h-5" /> : <Plus className="text-black w-5 h-5" />}
                 </div>
-                <h2 className="font-pixel text-sm text-[#39ff14]">ADD NEW {editorType.toUpperCase()}</h2>
+                <h2 className="font-pixel text-sm text-[#39ff14]">{editingId ? 'EDIT' : 'ADD NEW'} {editorType.toUpperCase()}</h2>
               </div>
               <button 
-                onClick={() => setIsEditorOpen(false)}
+                onClick={() => {
+                  setIsEditorOpen(false);
+                  setEditingId(null);
+                }}
                 className="p-2 hover:bg-white/10 rounded-lg transition-colors"
               >
                 <X className="w-5 h-5" />
@@ -360,19 +391,49 @@ export default function DashboardPage() {
                     {section.title}
                   </h1>
                 </div>
-                {role === 'admin' && (
-                  <button 
-                    onClick={() => {
-                      setEditorType('chapter');
-                      setParentId(section.id);
-                      setIsEditorOpen(true);
-                    }}
-                    className="p-2 bg-[#333] rounded-lg border border-[#444] hover:border-[#39ff14]/50 transition-colors"
-                    title="Add Chapter"
-                  >
-                    <Plus className="w-5 h-5 text-[#39ff14]" />
-                  </button>
-                )}
+                <div className="flex items-center gap-2">
+                  {role === 'admin' && (
+                    <button 
+                      onClick={() => {
+                        setEditorType('section');
+                        setEditingId(section.id);
+                        setEditorData({
+                          ...editorData,
+                          title: section.title,
+                        });
+                        setIsEditorOpen(true);
+                      }}
+                      className="p-2 bg-[#333] rounded-lg border border-[#444] hover:border-[#39ff14]/50 transition-colors"
+                      title="Edit Section"
+                    >
+                      <Edit className="w-4 h-4 text-[#39ff14]" />
+                    </button>
+                  )}
+                  {role === 'admin' && (
+                    <button 
+                      onClick={() => {
+                        setEditorType('chapter');
+                        setParentId(section.id);
+                        setEditingId(null);
+                        setEditorData({
+                          title: '',
+                          description: '',
+                          content: '',
+                          challenge: '',
+                          hint: '',
+                          initialCode: '',
+                          expectedOutput: '',
+                          type: 'beginner'
+                        });
+                        setIsEditorOpen(true);
+                      }}
+                      className="p-2 bg-[#333] rounded-lg border border-[#444] hover:border-[#39ff14]/50 transition-colors"
+                      title="Add Chapter"
+                    >
+                      <Plus className="w-5 h-5 text-[#39ff14]" />
+                    </button>
+                  )}
+                </div>
               </div>
 
               <div className="relative flex flex-col items-center space-y-16 py-8">
@@ -386,17 +447,45 @@ export default function DashboardPage() {
                         {chapter.title}
                       </div>
                       {role === 'admin' && (
-                        <button 
-                          onClick={() => {
-                            setEditorType('lesson');
-                            setParentId(chapter.id);
-                            setIsEditorOpen(true);
-                          }}
-                          className="w-6 h-6 bg-[#333] rounded flex items-center justify-center border border-[#444] hover:border-[#39ff14]/50 transition-colors"
-                          title="Add Lesson"
-                        >
-                          <Plus className="w-3 h-3 text-[#39ff14]" />
-                        </button>
+                        <div className="flex items-center gap-2">
+                          <button 
+                            onClick={() => {
+                              setEditorType('chapter');
+                              setEditingId(chapter.id);
+                              setEditorData({
+                                ...editorData,
+                                title: chapter.title,
+                              });
+                              setIsEditorOpen(true);
+                            }}
+                            className="w-6 h-6 bg-[#333] rounded flex items-center justify-center border border-[#444] hover:border-[#39ff14]/50 transition-colors"
+                            title="Edit Chapter"
+                          >
+                            <Edit className="w-3 h-3 text-[#39ff14]" />
+                          </button>
+                          <button 
+                            onClick={() => {
+                              setEditorType('lesson');
+                              setParentId(chapter.id);
+                              setEditingId(null);
+                              setEditorData({
+                                title: '',
+                                description: '',
+                                content: '',
+                                challenge: '',
+                                hint: '',
+                                initialCode: '',
+                                expectedOutput: '',
+                                type: 'beginner'
+                              });
+                              setIsEditorOpen(true);
+                            }}
+                            className="w-6 h-6 bg-[#333] rounded flex items-center justify-center border border-[#444] hover:border-[#39ff14]/50 transition-colors"
+                            title="Add Lesson"
+                          >
+                            <Plus className="w-3 h-3 text-[#39ff14]" />
+                          </button>
+                        </div>
                       )}
                     </div>
 
@@ -455,9 +544,35 @@ export default function DashboardPage() {
                               </div>
                               
                               {/* Tooltip-like label */}
-                              <div className="absolute left-full ml-6 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-black border border-[#333] p-3 rounded-lg w-48 pointer-events-none shadow-xl z-50">
-                                <div className="text-[8px] font-pixel text-[#39ff14] mb-1 uppercase">
-                                  {isCompleted ? 'COMPLETED' : isCurrent ? 'CURRENT' : 'UPCOMING'} • {lesson.type}
+                              <div className="absolute left-full ml-6 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-black border border-[#333] p-3 rounded-lg w-48 pointer-events-none group-hover:pointer-events-auto shadow-xl z-50">
+                                <div className="flex justify-between items-start mb-1">
+                                  <div className="text-[8px] font-pixel text-[#39ff14] uppercase">
+                                    {isCompleted ? 'COMPLETED' : isCurrent ? 'CURRENT' : 'UPCOMING'} • {lesson.type}
+                                  </div>
+                                  {role === 'admin' && (
+                                    <button 
+                                      onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        setEditorType('lesson');
+                                        setEditingId(lesson.id);
+                                        setEditorData({
+                                          title: lesson.title,
+                                          description: lesson.description,
+                                          content: lesson.content,
+                                          challenge: lesson.challenge,
+                                          hint: lesson.hint || '',
+                                          initialCode: lesson.initialCode,
+                                          expectedOutput: lesson.expectedOutput,
+                                          type: lesson.type
+                                        });
+                                        setIsEditorOpen(true);
+                                      }}
+                                      className="p-1 hover:bg-white/10 rounded transition-colors"
+                                    >
+                                      <Edit className="w-2 h-2 text-[#39ff14]" />
+                                    </button>
+                                  )}
                                 </div>
                                 <div className="text-xs font-pixel">{lesson.title}</div>
                                 <div className="text-[8px] font-pixel text-[#888] mt-1 leading-tight">{lesson.description}</div>
