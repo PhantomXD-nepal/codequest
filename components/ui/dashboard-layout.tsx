@@ -55,6 +55,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
     { href: "/dashboard", label: "LEARN", icon: Home },
     { href: "/leaderboard", label: "LEADERBOARD", icon: BarChart2 },
     { href: "/profile", label: "PROFILE", icon: User },
+    { href: "/playground", label: "PLAYGROUND", icon: LayoutDashboard },
   ];
 
   return (

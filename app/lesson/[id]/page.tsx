@@ -45,10 +45,22 @@ export default function LessonPage() {
   const [showHint, setShowHint] = useState(false);
   const [pyodide, setPyodide] = useState<any>(null);
   const [isPyodideLoading, setIsPyodideLoading] = useState(true);
+  const [tsLoaded, setTsLoaded] = useState(false);
   const [nextLessonId, setNextLessonId] = useState<string | null>(null);
   const [courseData, setCourseData] = useState<any[]>([]);
   
   const mainRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const script = document.createElement('script');
+    script.src = "https://cdnjs.cloudflare.com/ajax/libs/typescript/5.3.3/typescript.min.js";
+    script.onload = () => setTsLoaded(true);
+    document.head.appendChild(script);
+    
+    return () => {
+      document.head.removeChild(script);
+    };
+  }, []);
 
   useEffect(() => {
     async function loadProgress() {
@@ -194,25 +206,34 @@ export default function LessonPage() {
       } finally {
         setIsRunning(false);
       }
-    } else if (language === 'javascript' || language === 'typescript') {
+    } else if (language === 'js' || language === 'ts' || language === 'javascript' || language === 'typescript') {
       let stdout = "";
       let stderr = "";
       const originalLog = console.log;
       const originalError = console.error;
       console.log = (...args) => {
-        stdout += args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ') + '\n';
+        stdout += args.map(a => a instanceof Error ? a.message : typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ') + '\n';
       };
       console.error = (...args) => {
-        stderr += args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ') + '\n';
+        stderr += args.map(a => a instanceof Error ? a.message : typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ') + '\n';
       };
 
       try {
+        let codeToRun = code;
+        if (language === 'ts' || language === 'typescript') {
+          if (typeof window !== 'undefined' && (window as any).ts) {
+            codeToRun = (window as any).ts.transpile(code);
+          } else {
+            throw new Error("TypeScript compiler not loaded yet");
+          }
+        }
+
         // Simple JS execution
         // Execute code in a slightly safer way than direct eval
         const script = document.createElement('script');
         script.textContent = `
           try {
-            ${code}
+            ${codeToRun}
           } catch (e) {
             console.error(e);
           }
@@ -262,26 +283,42 @@ export default function LessonPage() {
     } else if (language === 'html' || language === 'css') {
       // For HTML/CSS, we'll just "succeed" if there's content for now, 
       // or we could show a preview. Let's show a simple success if they wrote something.
+      const htmlContent = language === 'html' ? code : `<style>${code}</style><div id="preview">CSS Preview</div>`;
+      
       setOutput({
         stdout: "Rendering preview...",
         stderr: "",
-        exitCode: 0
-      });
+        exitCode: 0,
+        htmlPreview: htmlContent
+      } as any);
       
-      setIsCompleted(true);
-      setShowSuccess(true);
-      
-      confetti({
-        particleCount: 100,
-        spread: 70,
-        origin: { y: 0.6 },
-        colors: ['#39ff14', '#ffffff', '#000000']
-      });
-      
-      try {
-        await completeLessonAction(lessonId, 25);
-      } catch (err) {
-        console.error("Failed to update progress:", err);
+      // Simple validation: just check if they wrote something that includes expected text
+      if (code.toLowerCase().includes(lesson.expectedOutput.toLowerCase().trim()) || lesson.expectedOutput.trim() === "") {
+        setIsCompleted(true);
+        setShowSuccess(true);
+        
+        confetti({
+          particleCount: 100,
+          spread: 70,
+          origin: { y: 0.6 },
+          colors: ['#39ff14', '#ffffff', '#000000']
+        });
+        
+        try {
+          const result = await completeLessonAction(lessonId, 25);
+          if (result.newAchievements && result.newAchievements.length > 0) {
+            setUnlockedAchievements(result.newAchievements);
+          }
+        } catch (err) {
+          console.error("Failed to update progress:", err);
+        }
+      } else {
+        setOutput({
+          stdout: "Preview rendered. Output does not match expected result.",
+          stderr: "Keep trying! Make sure you follow the instructions.",
+          exitCode: 1,
+          htmlPreview: htmlContent
+        } as any);
       }
       setIsRunning(false);
     } else {
@@ -410,14 +447,14 @@ export default function LessonPage() {
             <div className="absolute top-4 right-4 z-10 flex gap-2">
               <button 
                 onClick={handleRunCode}
-                disabled={isRunning || (isPyodideLoading && language === 'python')}
+                disabled={isRunning || (isPyodideLoading && (language === 'python' || language.toLowerCase().includes('dsa') || language.toLowerCase().includes('data structure')))}
                 className={`flex items-center gap-2 px-6 py-2 rounded-lg font-pixel text-[10px] transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] border-2 border-black ${
-                  isRunning || (isPyodideLoading && language === 'python')
+                  isRunning || (isPyodideLoading && (language === 'python' || language.toLowerCase().includes('dsa') || language.toLowerCase().includes('data structure')))
                     ? 'bg-[#333] text-[#555] cursor-not-allowed' 
                     : 'bg-[#39ff14] text-black hover:bg-[#32e012] active:translate-y-1 active:shadow-none'
                 }`}
               >
-                {isPyodideLoading && language === 'python' ? 'LOADING RUNTIME...' : isRunning ? 'RUNNING...' : (
+                {isPyodideLoading && (language === 'python' || language.toLowerCase().includes('dsa') || language.toLowerCase().includes('data structure')) ? 'LOADING RUNTIME...' : isRunning ? 'RUNNING...' : (
                   <>
                     <Play className="w-4 h-4 fill-current" /> RUN CODE
                   </>
@@ -429,7 +466,8 @@ export default function LessonPage() {
               <Editor
                 height="100%"
                 language={
-                  language === 'javascript' || language === 'typescript' ? 'javascript' : 
+                  language === 'js' || language === 'javascript' ? 'javascript' : 
+                  language === 'ts' || language === 'typescript' ? 'typescript' : 
                   language === 'html' ? 'html' : 
                   language === 'css' ? 'css' : 
                   'python'
@@ -470,7 +508,7 @@ export default function LessonPage() {
             </div>
             <div className="flex-1 p-4 font-mono text-sm overflow-y-auto custom-scrollbar bg-[#0d0d0d]">
               {output ? (
-                <div className="space-y-2">
+                <div className="space-y-2 h-full flex flex-col">
                   {output.stdout && <pre className="text-white whitespace-pre-wrap font-mono">{output.stdout}</pre>}
                   {output.stderr && (
                     <div className="bg-red-950/80 border-2 border-red-500 rounded-lg p-4 mt-4 shadow-[0_0_15px_rgba(239,68,68,0.3)]">
@@ -479,6 +517,15 @@ export default function LessonPage() {
                         <div className="text-red-400 text-xs font-bold uppercase tracking-wider font-pixel">Execution Error</div>
                       </div>
                       <pre className="text-red-300 whitespace-pre-wrap font-mono text-sm bg-black/50 p-3 rounded border border-red-900/50">{output.stderr}</pre>
+                    </div>
+                  )}
+                  {(output as any).htmlPreview && (
+                    <div className="flex-1 mt-4 border-2 border-[#333] rounded overflow-hidden bg-white min-h-[200px]">
+                      <iframe 
+                        srcDoc={(output as any).htmlPreview} 
+                        className="w-full h-full border-none"
+                        sandbox="allow-scripts allow-same-origin"
+                      />
                     </div>
                   )}
                 </div>

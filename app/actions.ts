@@ -88,8 +88,8 @@ export const getLanguagesAction = async () => {
 
   return langs.map(l => {
     let chapterCount = 0;
-    l.sections.forEach(s => {
-      chapterCount += s.chapters.length;
+    l.sections?.forEach(s => {
+      chapterCount += s.chapters?.length || 0;
     });
     return {
       id: l.id,
@@ -350,6 +350,44 @@ export async function completeLessonAction(lessonId: string, xpToAdd: number) {
   }
 
   return { success: true, newAchievements: [] };
+}
+
+export async function revertLessonProgressAction(lessonId: string) {
+  const session = await auth.api.getSession({
+    headers: await headers()
+  });
+
+  if (!session?.user) {
+    throw new Error("Unauthorized");
+  }
+
+  const userId = session.user.id;
+
+  const existingProgress = await db.query.userProgress.findFirst({
+    where: (up, { eq, and }) => and(eq(up.userId, userId), eq(up.lessonId, lessonId)),
+  });
+
+  if (existingProgress && existingProgress.completed) {
+    await db.update(userProgress).set({
+      completed: false,
+      completedAt: null,
+    }).where(eq(userProgress.id, existingProgress.id));
+
+    // Deduct standard XP (10)
+    const currentUser = await db.query.user.findFirst({
+      where: eq(user.id, userId),
+    });
+
+    if (currentUser) {
+      await db.update(user).set({
+        xp: Math.max(0, currentUser.xp - 10),
+      }).where(eq(user.id, userId));
+    }
+
+    revalidateTag(`user-stats-${userId}`);
+    return { success: true };
+  }
+  return { success: false };
 }
 
 export async function getUserStatsAction() {

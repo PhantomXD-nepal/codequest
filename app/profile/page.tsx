@@ -1,13 +1,28 @@
 "use client";
 
 import { DashboardLayout } from "@/components/ui/dashboard-layout";
-import { User, Shield, Star, Zap, Target, Award, Calendar, Settings, LogOut, ChevronRight, LayoutDashboard, BookOpen, Trophy } from "lucide-react";
-import { motion } from "framer-motion";
+import { User, Shield, Star, Zap, Target, Award, Calendar, Settings, LogOut, ChevronRight, LayoutDashboard, BookOpen, Trophy, X } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { authClient } from "@/lib/auth-client";
 import { useEffect, useRef, useState } from "react";
 import gsap from "gsap";
 import Image from "next/image";
 import { getUserStatsAction, getUserAchievementsAction, getAchievementsAction, getAllCourseContentAction, getUserRankAction } from "@/app/actions";
+
+const PREDEFINED_AVATARS = [
+  "https://api.dicebear.com/7.x/pixel-art/svg?seed=Felix",
+  "https://api.dicebear.com/7.x/pixel-art/svg?seed=Aneka",
+  "https://api.dicebear.com/7.x/pixel-art/svg?seed=Jude",
+  "https://api.dicebear.com/7.x/pixel-art/svg?seed=Avery",
+  "https://api.dicebear.com/7.x/pixel-art/svg?seed=Eden",
+  "https://api.dicebear.com/7.x/pixel-art/svg?seed=Halo",
+  "https://api.dicebear.com/7.x/pixel-art/svg?seed=Lorelei",
+  "https://api.dicebear.com/7.x/pixel-art/svg?seed=Wyatt",
+  "https://api.dicebear.com/7.x/pixel-art/svg?seed=Destiny",
+  "https://api.dicebear.com/7.x/pixel-art/svg?seed=Chase",
+  "https://api.dicebear.com/7.x/pixel-art/svg?seed=Alex",
+  "https://api.dicebear.com/7.x/pixel-art/svg?seed=Sam",
+];
 
 export default function ProfilePage() {
   const { data: session } = authClient.useSession();
@@ -17,10 +32,12 @@ export default function ProfilePage() {
   const [allAchievements, setAllAchievements] = useState<any[]>([]);
   const [courseData, setCourseData] = useState<any[]>([]);
   const [rank, setRank] = useState<number | null>(null);
+  const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
+  const [isUpdatingAvatar, setIsUpdatingAvatar] = useState(false);
 
   useEffect(() => {
     async function fetchStats() {
-      if (session) {
+      if (session?.user?.id) {
         try {
           const data = await getUserStatsAction();
           setStats(data as any);
@@ -38,10 +55,10 @@ export default function ProfilePage() {
       }
     }
     fetchStats();
-  }, [session]);
+  }, [session?.user?.id]);
 
   useEffect(() => {
-    if (session && profileRef.current) {
+    if (session?.user?.id && profileRef.current) {
       const ctx = gsap.context(() => {
         const cards = profileRef.current?.querySelectorAll(".profile-card");
         if (cards && cards.length > 0) {
@@ -61,7 +78,7 @@ export default function ProfilePage() {
       }, profileRef);
       return () => ctx.revert();
     }
-  }, [session]);
+  }, [session?.user?.id]);
 
   if (!session) {
     return (
@@ -99,6 +116,20 @@ export default function ProfilePage() {
   if (level >= 50) title = "MASTER";
   if (level >= 100) title = "GRANDMASTER";
 
+  const handleAvatarSelect = async (avatarUrl: string) => {
+    setIsUpdatingAvatar(true);
+    try {
+      await authClient.updateUser({ image: avatarUrl });
+      setIsAvatarModalOpen(false);
+      // Force a reload to update session data
+      window.location.reload();
+    } catch (error) {
+      console.error("Failed to update avatar:", error);
+    } finally {
+      setIsUpdatingAvatar(false);
+    }
+  };
+
   return (
     <DashboardLayout>
       <main className="flex-1 py-12">
@@ -109,7 +140,10 @@ export default function ProfilePage() {
             <div className="lg:col-span-4 space-y-8">
               <div className="profile-card bg-[#1e1e1e] border-4 border-[#000] p-8 text-center relative overflow-hidden shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] rounded-xl">
                 <div className="absolute top-0 left-0 w-full h-2 bg-[#39ff14]" />
-                <div className="size-32 border-4 border-[#000] mx-auto mb-6 bg-[#141414] overflow-hidden relative group rounded-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                <div 
+                  className="size-32 border-4 border-[#000] mx-auto mb-6 bg-[#141414] overflow-hidden relative group rounded-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] cursor-pointer"
+                  onClick={() => setIsAvatarModalOpen(true)}
+                >
                   <Image 
                     src={user.image || `https://api.dicebear.com/7.x/pixel-art/svg?seed=${user.name}`} 
                     alt={user.name} 
@@ -188,15 +222,17 @@ export default function ProfilePage() {
                 </div>
                 
                 <div className="space-y-6">
-                  {courseData.length > 0 ? courseData.map((section, i) => {
+                  {courseData.length > 0 ? courseData.map((lang, i) => {
                     let totalLessons = 0;
                     let completed = 0;
-                    section.chapters.forEach((chapter: any) => {
-                      chapter.lessons.forEach((lesson: any) => {
-                        totalLessons++;
-                        if (stats.completedLessons.includes(lesson.id as never)) {
-                          completed++;
-                        }
+                    lang.sections?.forEach((section: any) => {
+                      section.chapters?.forEach((chapter: any) => {
+                        chapter.lessons?.forEach((lesson: any) => {
+                          totalLessons++;
+                          if (stats.completedLessons.includes(lesson.id as never)) {
+                            completed++;
+                          }
+                        });
                       });
                     });
                     const progress = totalLessons === 0 ? 0 : Math.round((completed / totalLessons) * 100);
@@ -207,7 +243,7 @@ export default function ProfilePage() {
                     return (
                       <div key={i} className="space-y-3 p-4 bg-[#141414] border-2 border-[#000] rounded-lg hover:border-[#39ff14]/50 transition-colors cursor-pointer group shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                         <div className="flex justify-between items-center font-pixel text-[12px]">
-                          <span className="group-hover:text-[#39ff14] transition-colors text-white">{section.title}</span>
+                          <span className="group-hover:text-[#39ff14] transition-colors text-white">{lang.title || lang.name}</span>
                           <span className="text-[#888]">{progress}%</span>
                         </div>
                         <div className="h-3 border-2 border-[#000] bg-[#1a1a1a] overflow-hidden rounded-full">
@@ -220,11 +256,13 @@ export default function ProfilePage() {
                       NO QUESTS AVAILABLE
                     </div>
                   )}
-                  {courseData.length > 0 && courseData.every(section => {
+                  {courseData.length > 0 && courseData.every(lang => {
                     let completed = 0;
-                    section.chapters.forEach((chapter: any) => {
-                      chapter.lessons.forEach((lesson: any) => {
-                        if (stats.completedLessons.includes(lesson.id as never)) completed++;
+                    lang.sections?.forEach((section: any) => {
+                      section.chapters?.forEach((chapter: any) => {
+                        chapter.lessons?.forEach((lesson: any) => {
+                          if (stats.completedLessons.includes(lesson.id as never)) completed++;
+                        });
                       });
                     });
                     return completed === 0;
@@ -271,6 +309,62 @@ export default function ProfilePage() {
           </div>
         </div>
       </main>
+
+      {/* Avatar Selection Modal */}
+      <AnimatePresence>
+        {isAvatarModalOpen && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
+          >
+            <motion.div 
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 20 }}
+              className="bg-[#1e1e1e] border-4 border-[#000] p-6 max-w-2xl w-full shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] rounded-xl relative"
+            >
+              <button 
+                onClick={() => setIsAvatarModalOpen(false)}
+                className="absolute top-4 right-4 text-[#888] hover:text-white transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
+              
+              <h2 className="font-pixel text-xl text-[#39ff14] mb-6 uppercase">SELECT AVATAR</h2>
+              
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-4 max-h-[60vh] overflow-y-auto p-2">
+                {PREDEFINED_AVATARS.map((avatar, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => handleAvatarSelect(avatar)}
+                    disabled={isUpdatingAvatar}
+                    className={`relative aspect-square border-4 rounded-xl overflow-hidden group transition-all ${
+                      user.image === avatar 
+                        ? 'border-[#39ff14] shadow-[0_0_15px_rgba(57,255,20,0.5)]' 
+                        : 'border-[#000] hover:border-white'
+                    }`}
+                  >
+                    <Image 
+                      src={avatar} 
+                      alt={`Avatar ${idx + 1}`} 
+                      fill
+                      className="object-cover bg-[#141414] group-hover:scale-110 transition-transform" 
+                      referrerPolicy="no-referrer"
+                    />
+                    {isUpdatingAvatar && (
+                      <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                        <div className="w-4 h-4 border-2 border-[#39ff14] border-t-transparent rounded-full animate-spin" />
+                      </div>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </DashboardLayout>
   );
 }

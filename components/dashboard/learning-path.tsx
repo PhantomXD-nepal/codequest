@@ -2,7 +2,7 @@
 
 import React from "react";
 import { motion } from "motion/react";
-import { Hexagon, Check, Lock, Play, Plus, Edit, Zap } from "lucide-react";
+import { Hexagon, Check, Lock, Play, Plus, Edit, Zap, RotateCcw } from "lucide-react";
 
 interface LearningPathProps {
   courseData: any[];
@@ -14,22 +14,24 @@ interface LearningPathProps {
   onEditSection: (section: any) => void;
   onEditChapter: (chapter: any) => void;
   onEditLesson: (lesson: any) => void;
+  onRevertProgress?: (lessonId: string) => void;
 }
 
 export function LearningPath({
-  courseData,
-  completedLessons,
+  courseData = [],
+  completedLessons = [],
   role,
   onLessonClick,
   onAddChapter,
   onAddLesson,
   onEditSection,
   onEditChapter,
-  onEditLesson
+  onEditLesson,
+  onRevertProgress
 }: LearningPathProps) {
   // Flatten all lessons to determine locking logic
   const allLessons: any[] = [];
-  courseData.forEach(section => {
+  courseData?.forEach(section => {
     section.chapters?.forEach((chapter: any) => {
       chapter.lessons?.forEach((lesson: any) => {
         allLessons.push(lesson);
@@ -191,12 +193,29 @@ export function LearningPath({
                               <p className="text-[10px] font-pixel text-[#888] leading-relaxed">{lesson.description}</p>
                               
                               {!isLocked && (
-                                <div className="mt-4 pt-4 border-t border-[#333] flex items-center justify-between">
-                                  <div className="flex items-center gap-2">
-                                    <Zap className="w-3 h-3 text-[#39ff14]" />
-                                    <span className="text-[10px] font-pixel text-[#39ff14]">10 XP</span>
+                                <div className="mt-4 pt-4 border-t border-[#333] flex flex-col gap-3">
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                      <Zap className="w-3 h-3 text-[#39ff14]" />
+                                      <span className="text-[10px] font-pixel text-[#39ff14]">10 XP</span>
+                                    </div>
+                                    <div className="text-[8px] font-pixel text-[#888]">
+                                      {isCompleted ? 'REVIEW' : 'CLICK TO START'}
+                                    </div>
                                   </div>
-                                  <div className="text-[8px] font-pixel text-[#888]">CLICK TO START</div>
+                                  
+                                  {isCompleted && onRevertProgress && (
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        onRevertProgress(lesson.id);
+                                      }}
+                                      className="w-full py-2 bg-[#ff4444]/10 border border-[#ff4444]/30 rounded text-[8px] font-pixel text-[#ff4444] hover:bg-[#ff4444]/20 transition-colors flex items-center justify-center gap-2"
+                                    >
+                                      <RotateCcw className="w-2 h-2" />
+                                      MARK AS INCOMPLETE
+                                    </button>
+                                  )}
                                 </div>
                               )}
                             </div>

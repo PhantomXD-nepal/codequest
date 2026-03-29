@@ -57,6 +57,7 @@ const sampleTiers: PricingTier[] = [
 
 export default function Home() {
   const { data: session } = authClient.useSession();
+  const pageRef = useRef<HTMLDivElement>(null);
   const heroRef = useRef<HTMLDivElement>(null);
   const featuresRef = useRef<HTMLDivElement>(null);
   const pricingRef = useRef<HTMLDivElement>(null);
@@ -134,13 +135,13 @@ export default function Home() {
         duration: 1,
         ease: "back.out(1.7)"
       });
-    }, heroRef);
+    }, pageRef.current || undefined);
 
     return () => ctx.revert();
   }, []);
 
   return (
-    <div className="min-h-screen mc-container text-white flex flex-col selection:bg-yellow-400 selection:text-black">
+    <div ref={pageRef} className="min-h-screen mc-container text-white flex flex-col selection:bg-yellow-400 selection:text-black">
       <Header />
       
       <main className="flex-1">

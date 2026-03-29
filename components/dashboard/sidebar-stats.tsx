@@ -25,17 +25,23 @@ export function SidebarStats({
   onAddSection
 }: SidebarStatsProps) {
   const router = useRouter();
+  const { data: session } = authClient.useSession();
+  const userName = session?.user?.name || "PLAYER_01";
 
   return (
     <div className="space-y-8">
       {/* Profile Card */}
       <div className="bg-[#1e1e1e] border-4 border-[#000] p-6 rounded-xl shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
         <div className="flex items-center gap-4 mb-6">
-          <div className="w-12 h-12 bg-[#39ff14] border-2 border-[#000] rounded-lg flex items-center justify-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-            <User className="w-6 h-6 text-black" />
+          <div className="w-12 h-12 bg-[#39ff14] border-2 border-[#000] rounded-lg flex items-center justify-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] overflow-hidden">
+            {session?.user?.image ? (
+              <img src={session.user.image} alt={userName} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+            ) : (
+              <User className="w-6 h-6 text-black" />
+            )}
           </div>
           <div>
-            <h3 className="font-pixel text-xs text-white uppercase tracking-wider">PLAYER_01</h3>
+            <h3 className="font-pixel text-xs text-white uppercase tracking-wider">{userName}</h3>
             <div className="flex items-center gap-2 mt-1">
               <div className="w-2 h-2 bg-[#39ff14] rounded-full animate-pulse" />
               <span className="font-pixel text-[8px] text-[#39ff14] uppercase">ONLINE</span>

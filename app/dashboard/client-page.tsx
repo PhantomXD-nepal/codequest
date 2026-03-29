@@ -9,7 +9,7 @@ import Link from "next/link";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { Component as LumaSpin } from "@/components/ui/luma-spin";
-import { getUserStatsAction, makeMeAdminAction, getCourseContentByLanguageAction, createChapterAction, createLessonAction, createSectionAction, updateChapterAction, updateLessonAction, updateSectionAction, checkAndUnlockAchievementsAction, getUserRankAction, getLanguagesAction, seedAllCoursesAction } from "@/app/actions";
+import { getUserStatsAction, makeMeAdminAction, getCourseContentByLanguageAction, createChapterAction, createLessonAction, createSectionAction, updateChapterAction, updateLessonAction, updateSectionAction, checkAndUnlockAchievementsAction, getUserRankAction, getLanguagesAction, seedAllCoursesAction, revertLessonProgressAction } from "@/app/actions";
 import { DashboardLayout } from "@/components/ui/dashboard-layout";
 import dynamic from "next/dynamic";
 
@@ -159,6 +159,21 @@ export default function DashboardClientPage({
     }
   };
 
+  const handleRevertProgress = async (lessonId: string) => {
+    try {
+      const result = await revertLessonProgressAction(lessonId);
+      if (result.success) {
+        setCompletedLessons(prev => prev.filter(id => id !== lessonId));
+        // Refresh stats to update XP and streak
+        const stats = await getUserStatsAction();
+        setXp(stats.xp);
+        setStreak(stats.streak);
+      }
+    } catch (err) {
+      console.error("Failed to revert progress:", err);
+    }
+  };
+
   useEffect(() => {
     if (!isPending && !session) {
       router.push("/signin");
@@ -305,6 +320,7 @@ export default function DashboardClientPage({
               onEditSection={(s) => { setEditorType('section'); setEditingId(s.id); setEditorData({ ...editorData, title: s.title }); setIsEditorOpen(true); }}
               onEditChapter={(c) => { setEditorType('chapter'); setEditingId(c.id); setEditorData({ ...editorData, title: c.title }); setIsEditorOpen(true); }}
               onEditLesson={(l) => { setEditorType('lesson'); setEditingId(l.id); setEditorData({ title: l.title, description: l.description, content: l.content, challenge: l.challenge, hint: l.hint || '', initialCode: l.initialCode, expectedOutput: l.expectedOutput, type: l.type }); setIsEditorOpen(true); }}
+              onRevertProgress={handleRevertProgress}
             />
           )}
         </div>
