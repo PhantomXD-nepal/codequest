@@ -1,13 +1,23 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import { Play, Terminal, Code2, FileJson, FileType2, Layout, XCircle, ArrowLeft } from "lucide-react";
+import { useState, useEffect, useRef, Suspense } from "react";
+import { Play, Terminal, Code2, FileJson, FileType2, Layout, XCircle, ArrowLeft, Wand2, BookOpen, Clock, Trash2 } from "lucide-react";
 import { DashboardLayout } from "@/components/ui/dashboard-layout";
 import Editor from "@monaco-editor/react";
+import { useSearchParams } from "next/navigation";
+import { lessons, Lesson } from "@/lib/lessons-data";
+import prettier from "prettier/standalone";
+import parserHtml from "prettier/plugins/html";
+import parserCss from "prettier/plugins/postcss";
+import parserBabel from "prettier/plugins/babel";
+import parserEstree from "prettier/plugins/estree";
 
 type EditorType = "web" | "python" | "react" | null;
 
-export default function Playground() {
+function PlaygroundContent() {
+  const searchParams = useSearchParams();
+  const lessonId = searchParams.get("lesson");
+  const [activeLesson, setActiveLesson] = useState<Lesson | null>(null);
   const [editorType, setEditorType] = useState<EditorType>(null);
   
   // Web state
@@ -41,10 +51,33 @@ export default function Playground() {
   );
 }`);
 
-  const [logs, setLogs] = useState<{type: string, message: string}[]>([]);
+  const [logs, setLogs] = useState<{type: string, message: string, time: string}[]>([]);
   const [srcDoc, setSrcDoc] = useState("");
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [tsLoaded, setTsLoaded] = useState(false);
+
+  // Handle lesson loading
+  useEffect(() => {
+    if (lessonId) {
+      const lesson = lessons.find(l => l.id === lessonId);
+      if (lesson) {
+        setActiveLesson(lesson);
+        if (lesson.category === 'python') {
+          setEditorType('python');
+          if (lesson.initialCode.py) setPy(lesson.initialCode.py);
+        } else if (lesson.category === 'react') {
+          setEditorType('react');
+          if (lesson.initialCode.react) setReactCode(lesson.initialCode.react);
+        } else {
+          setEditorType('web');
+          if (lesson.initialCode.html) setHtml(lesson.initialCode.html);
+          if (lesson.initialCode.css) setCss(lesson.initialCode.css);
+          if (lesson.initialCode.js) setJs(lesson.initialCode.js);
+          if (lesson.initialCode.ts) setTs(lesson.initialCode.ts);
+        }
+      }
+    }
+  }, [lessonId]);
 
   // Load TypeScript compiler only when web editor is selected
   useEffect(() => {
@@ -62,6 +95,36 @@ export default function Playground() {
     }
   }, [editorType, tsLoaded]);
 
+  const formatCode = async () => {
+    try {
+      if (editorType === 'web') {
+        if (activeWebTab === 'html') {
+          const formatted = await prettier.format(html, { parser: "html", plugins: [parserHtml] });
+          setHtml(formatted);
+        } else if (activeWebTab === 'css') {
+          const formatted = await prettier.format(css, { parser: "css", plugins: [parserCss] });
+          setCss(formatted);
+        } else if (activeWebTab === 'js' || activeWebTab === 'ts') {
+          const code = activeWebTab === 'js' ? js : ts;
+          const formatted = await prettier.format(code, { 
+            parser: "babel", 
+            plugins: [parserBabel, parserEstree] 
+          });
+          if (activeWebTab === 'js') setJs(formatted);
+          else setTs(formatted);
+        }
+      } else if (editorType === 'react') {
+        const formatted = await prettier.format(reactCode, { 
+          parser: "babel", 
+          plugins: [parserBabel, parserEstree] 
+        });
+        setReactCode(formatted);
+      }
+    } catch (err) {
+      console.error("Formatting error:", err);
+    }
+  };
+
   const compileAndRun = () => {
     if (!editorType) return;
 
@@ -75,18 +138,18 @@ export default function Playground() {
         
         console.log = function(...args) {
           const msg = args.map(a => a instanceof Error ? a.message : typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ');
-          window.parent.postMessage({ type: 'log', message: msg }, '*');
+          window.parent.postMessage({ type: 'log', message: msg, time: new Date().toLocaleTimeString() }, '*');
           originalLog.apply(console, args);
         };
         
         console.error = function(...args) {
           const msg = args.map(a => a instanceof Error ? a.message : typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ');
-          window.parent.postMessage({ type: 'error', message: msg }, '*');
+          window.parent.postMessage({ type: 'error', message: msg, time: new Date().toLocaleTimeString() }, '*');
           originalError.apply(console, args);
         };
         
         window.onerror = function(msg, url, line, col, error) {
-          window.parent.postMessage({ type: 'error', message: msg + ' at line ' + line }, '*');
+          window.parent.postMessage({ type: 'error', message: msg + ' at line ' + line, time: new Date().toLocaleTimeString() }, '*');
           return false;
         };
       </script>
@@ -202,7 +265,7 @@ export default function Playground() {
       `;
     }
 
-    setLogs(prev => currentTsError ? [{type: 'error', message: currentTsError}] : []);
+    setLogs(prev => currentTsError ? [{type: 'error', message: currentTsError, time: new Date().toLocaleTimeString()}] : []);
     setSrcDoc(htmlContent);
   };
 
@@ -218,7 +281,7 @@ export default function Playground() {
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
       if (event.data && (event.data.type === 'log' || event.data.type === 'error')) {
-        setLogs(prev => [...prev, { type: event.data.type, message: event.data.message }]);
+        setLogs(prev => [...prev, { type: event.data.type, message: event.data.message, time: event.data.time }]);
       }
     };
     window.addEventListener('message', handleMessage);
@@ -293,6 +356,7 @@ export default function Playground() {
               onClick={() => {
                 setEditorType(null);
                 setLogs([]);
+                setActiveLesson(null);
               }}
               className="p-2 bg-[#1e1e1e] border-2 border-[#000] rounded-lg text-[#888] hover:text-white hover:border-white transition-colors"
               title="Back to Selection"
@@ -306,13 +370,23 @@ export default function Playground() {
               {editorType} PLAYGROUND
             </h1>
           </div>
-          <button 
-            onClick={compileAndRun}
-            className="mc-button mc-button-green px-6 py-2 flex items-center gap-2 font-pixel text-sm text-white"
-          >
-            <Play className="w-4 h-4" />
-            RUN
-          </button>
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={formatCode}
+              className="mc-button mc-button-blue px-4 py-2 flex items-center gap-2 font-pixel text-[10px] text-white"
+              title="Format Code"
+            >
+              <Wand2 className="w-4 h-4" />
+              FORMAT
+            </button>
+            <button 
+              onClick={compileAndRun}
+              className="mc-button mc-button-green px-6 py-2 flex items-center gap-2 font-pixel text-sm text-white"
+            >
+              <Play className="w-4 h-4" />
+              RUN
+            </button>
+          </div>
         </div>
 
         <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-4 min-h-0">
@@ -399,6 +473,18 @@ export default function Playground() {
                 }}
               />
             </div>
+
+            {activeLesson && (
+              <div className="bg-[#141414] border-t-4 border-[#000] p-4 max-h-48 overflow-y-auto">
+                <div className="flex items-center gap-2 mb-2">
+                  <BookOpen className="w-4 h-4 text-[#39ff14]" />
+                  <span className="font-pixel text-[10px] text-[#39ff14] uppercase">LESSON: {activeLesson.title}</span>
+                </div>
+                <p className="text-[#888] font-mono text-xs leading-relaxed">
+                  {activeLesson.content}
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Output Section */}
@@ -424,7 +510,7 @@ export default function Playground() {
             </div>
 
             {/* Console */}
-            <div className="h-48 bg-[#1e1e1e] border-4 border-[#000] rounded-xl shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] flex flex-col overflow-hidden">
+            <div className="h-64 bg-[#1e1e1e] border-4 border-[#000] rounded-xl shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] flex flex-col overflow-hidden">
               <div className="flex items-center justify-between bg-[#141414] border-b-4 border-[#000] py-2 px-4">
                 <div className="flex items-center gap-2 font-pixel text-[10px] text-[#888]">
                   <Terminal className="w-4 h-4" />
@@ -435,25 +521,33 @@ export default function Playground() {
                   className="text-[#888] hover:text-white transition-colors"
                   title="Clear Console"
                 >
-                  <XCircle className="w-4 h-4" />
+                  <Trash2 className="w-4 h-4" />
                 </button>
               </div>
-              <div className="flex-1 p-4 overflow-y-auto font-mono text-xs space-y-2">
+              <div className="flex-1 p-0 overflow-y-auto font-mono text-xs">
                 {logs.length === 0 ? (
-                  <div className="text-[#888] italic">No output</div>
+                  <div className="p-4 text-[#888] italic">No output</div>
                 ) : (
-                  logs.map((log, i) => (
-                    <div 
-                      key={i} 
-                      className={`border-l-2 pl-2 ${
-                        log.type === 'error' 
-                          ? 'border-red-500 text-red-400 bg-red-500/10 py-1' 
-                          : 'border-[#39ff14] text-zinc-300'
-                      }`}
-                    >
-                      {log.message}
-                    </div>
-                  ))
+                  <div className="divide-y divide-[#000]">
+                    {logs.map((log, i) => (
+                      <div 
+                        key={i} 
+                        className={`p-2 flex gap-3 group hover:bg-white/5 transition-colors ${
+                          log.type === 'error' 
+                            ? 'bg-red-500/5 text-red-400' 
+                            : 'text-zinc-300'
+                        }`}
+                      >
+                        <div className="flex items-center gap-1 text-[9px] text-[#555] font-mono shrink-0">
+                          <Clock className="w-3 h-3" />
+                          {log.time}
+                        </div>
+                        <div className="break-all whitespace-pre-wrap">
+                          {log.message}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 )}
               </div>
             </div>
@@ -464,3 +558,12 @@ export default function Playground() {
     </DashboardLayout>
   );
 }
+
+export default function Playground() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#111] flex items-center justify-center font-pixel text-[#39ff14]">LOADING...</div>}>
+      <PlaygroundContent />
+    </Suspense>
+  );
+}
+

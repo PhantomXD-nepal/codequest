@@ -1,11 +1,28 @@
-# How to create a course for CodeQuest
+# CodeQuest Content Generation Guide
 
-CodeQuest is a gamified learning platform. 
-When creating a new course or adding content, please provide a JSON object with the following nested structure:
+CodeQuest is a gamified learning platform supporting multiple programming environments: Web (HTML/CSS/JS), Python, and React.
+
+## Supported Languages (CONSTANT)
+
+When generating content, you **MUST** use one of the following language identifiers in the `language` field:
+
+- `python`: Standard Python programming.
+- `dsa with python`: Data Structures and Algorithms using Python.
+- `js`: JavaScript Essentials.
+- `ts`: TypeScript Pro.
+- `html`: HTML Structure.
+- `css`: CSS Styling.
+- `react`: React Mastery.
+
+**DO NOT** use any other language identifiers.
+
+## Content Structure
+
+When creating a new course or adding content, please provide a JSON object with the following nested structure. This can be pasted directly into the Admin Dashboard's "QUICK IMPORT" field.
 
 ```json
 {
-  "language": "python",
+  "language": "python", // MUST be one of the supported languages listed above
   "sections": [
     {
       "title": "Section 1: The Basics",
@@ -21,7 +38,7 @@ When creating a new course or adding content, please provide a JSON object with 
               "hint": "An optional helpful hint.",
               "initialCode": "# Write your code here\n",
               "expectedOutput": "The exact string output expected from the user's code.",
-              "type": "beginner"
+              "type": "beginner" // Options: "beginner", "intermediate", "advanced"
             }
           ]
         }
@@ -31,5 +48,22 @@ When creating a new course or adding content, please provide a JSON object with 
 }
 ```
 
-Make sure the `expectedOutput` exactly matches what the `initialCode` (when solved) will print to stdout.
-The `language` field specifies which programming language this course is for (e.g., "python", "javascript").
+## Language Specifics
+
+### Python
+- `initialCode` should be valid Python.
+- `expectedOutput` is compared against the stdout of the user's code.
+
+### Web (HTML/CSS/JS)
+- `initialCode` can be a single string (defaulting to HTML) or you can provide separate fields if using the manual editor.
+- For imports, the platform supports standard HTML structure.
+
+### React
+- `initialCode` should be a functional React component (usually named `App`).
+- The platform uses `motion/react` for animations and Tailwind CSS for styling.
+
+## Best Practices
+1. **Markdown:** Use rich Markdown in the `content` field to make lessons engaging.
+2. **Validation:** Ensure `expectedOutput` is exactly what the solution prints.
+3. **Hints:** Provide helpful hints that guide the user without giving away the answer.
+4. **Difficulty:** Properly categorize lessons to help users find content at their level.

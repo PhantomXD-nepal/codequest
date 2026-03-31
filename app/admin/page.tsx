@@ -3,9 +3,9 @@
 import React, { useEffect, useState } from "react";
 import { authClient } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
-import { getUserStatsAction, getUsersAction, createSectionAction, createChapterAction, createLessonAction, importNestedCourseAction, getAchievementsAction, createAchievementAction, deleteAchievementAction } from "@/app/actions";
+import { getUserStatsAction, getUsersAction, createSectionAction, createChapterAction, createLessonAction, importNestedCourseAction, getAchievementsAction, createAchievementAction, deleteAchievementAction, deleteAllCoursesAction, getLlmsTxtAction, updateLlmsTxtAction } from "@/app/actions";
 import { Component as LumaSpin } from "@/components/ui/luma-spin";
-import { ArrowLeft, Users, BookOpen, Plus, Settings, Save } from "lucide-react";
+import { ArrowLeft, Users, BookOpen, Plus, Settings, Save, Trash2, FileText } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 
@@ -14,8 +14,11 @@ export default function AdminPage() {
   const router = useRouter();
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
   const [users, setUsers] = useState<any[]>([]);
-  const [activeTab, setActiveTab] = useState<'users' | 'content' | 'achievements'>('users');
+  const [activeTab, setActiveTab] = useState<'users' | 'content' | 'achievements' | 'llms'>('users');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // LLMS.txt State
+  const [llmsContent, setLlmsContent] = useState("");
   
   // Achievements State
   const [achievements, setAchievements] = useState<any[]>([]);
@@ -67,6 +70,16 @@ export default function AdminPage() {
       checkAdmin();
     }
   }, [session, router]);
+
+  useEffect(() => {
+    if (activeTab === 'llms') {
+      const fetchLlms = async () => {
+        const content = await getLlmsTxtAction();
+        setLlmsContent(content);
+      };
+      fetchLlms();
+    }
+  }, [activeTab]);
 
   const handleContentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -227,6 +240,33 @@ export default function AdminPage() {
     }
   };
 
+  const handleDeleteAllCourses = async () => {
+    if (!confirm('⚠️ WARNING: This will delete ALL languages, sections, chapters, lessons, and user progress. This action is IRREVERSIBLE. Are you sure?')) return;
+    setIsSubmitting(true);
+    try {
+      await deleteAllCoursesAction();
+      alert("All course data has been deleted.");
+    } catch (err) {
+      console.error("Failed to delete all courses:", err);
+      alert("Failed to delete all courses.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleUpdateLlms = async () => {
+    setIsSubmitting(true);
+    try {
+      await updateLlmsTxtAction(llmsContent);
+      alert("llms.txt updated successfully!");
+    } catch (err) {
+      console.error("Failed to update llms.txt:", err);
+      alert("Failed to update llms.txt.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   if (isPending || isAdmin === null) {
     return (
       <div className="min-h-screen bg-[#1a1a1a] flex flex-col items-center justify-center gap-6">
@@ -287,6 +327,15 @@ export default function AdminPage() {
           >
             <Settings className="w-4 h-4" />
             ACHIEVEMENTS
+          </button>
+          <button 
+            onClick={() => setActiveTab('llms')}
+            className={`flex items-center gap-2 font-pixel text-xs px-4 py-2 rounded-lg transition-colors ${
+              activeTab === 'llms' ? 'bg-[#39ff14] text-black' : 'text-[#888] hover:bg-[#252525] hover:text-white'
+            }`}
+          >
+            <FileText className="w-4 h-4" />
+            LLMS.TXT
           </button>
         </div>
 
@@ -404,6 +453,13 @@ export default function AdminPage() {
                   >
                     MANAGE COURSES
                   </Link>
+                  <button 
+                    onClick={handleDeleteAllCourses}
+                    disabled={isSubmitting}
+                    className="font-pixel text-[10px] px-4 py-2 rounded border border-red-500 transition-colors bg-[#1a1a1a] text-red-500 hover:bg-red-500 hover:text-white disabled:opacity-50"
+                  >
+                    DELETE ALL DATA
+                  </button>
                 </div>
               </div>
               
@@ -689,6 +745,32 @@ export default function AdminPage() {
                 )}
               </div>
             </div>
+          </div>
+        )}
+
+        {/* LLMS.txt Tab */}
+        {activeTab === 'llms' && (
+          <div className="bg-[#1e1e1e] border-4 border-[#000] p-6 rounded-xl shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-sm font-pixel text-[#39ff14]">LLMS.TXT EDITOR</h2>
+              <button 
+                onClick={handleUpdateLlms}
+                disabled={isSubmitting}
+                className="bg-[#39ff14] text-black font-pixel text-[10px] px-6 py-2 rounded-lg flex items-center gap-2 hover:bg-[#32e012] transition-colors shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] border-2 border-black disabled:opacity-50"
+              >
+                <Save className="w-4 h-4" />
+                {isSubmitting ? 'SAVING...' : 'SAVE CHANGES'}
+              </button>
+            </div>
+            <p className="text-[10px] text-[#888] mb-4 font-pixel">
+              THIS FILE PROVIDES GUIDELINES FOR LLMS ON HOW TO GENERATE CONTENT FOR THIS PLATFORM.
+            </p>
+            <textarea 
+              value={llmsContent}
+              onChange={(e) => setLlmsContent(e.target.value)}
+              className="w-full h-[500px] bg-[#0d0d0d] border border-[#333] rounded-lg p-4 text-[#39ff14] font-mono text-xs focus:outline-none focus:border-[#39ff14] custom-scrollbar"
+              placeholder="Enter llms.txt content..."
+            />
           </div>
         )}
       </main>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { authClient } from "@/lib/auth-client";
 import { useRouter, usePathname } from "next/navigation";
-import { LayoutDashboard, User, BarChart2, Home, Settings, LogOut, Menu, X, Zap, Star, Trophy } from "lucide-react";
+import { LayoutDashboard, User, BarChart2, Home, Settings, LogOut, Menu, X, Zap, Star, Trophy, BookOpen } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { Component as LumaSpin } from "@/components/ui/luma-spin";
@@ -53,6 +53,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 
   const navLinks = [
     { href: "/dashboard", label: "LEARN", icon: Home },
+    { href: "/lessons", label: "LESSONS", icon: BookOpen },
     { href: "/leaderboard", label: "LEADERBOARD", icon: BarChart2 },
     { href: "/profile", label: "PROFILE", icon: User },
     { href: "/playground", label: "PLAYGROUND", icon: LayoutDashboard },

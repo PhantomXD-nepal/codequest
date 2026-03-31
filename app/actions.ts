@@ -6,6 +6,9 @@ import { eq, and } from "drizzle-orm";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { pythonCourse } from "@/lib/lessons";
+import { SUPPORTED_LANGUAGES } from "@/lib/constants";
+import fs from "fs";
+import path from "path";
 
 import { unstable_cache, revalidateTag } from "next/cache";
 
@@ -112,43 +115,37 @@ export async function seedAllCoursesAction() {
   await db.delete(lesson);
   await db.delete(chapter);
   await db.delete(section);
-  await db.delete(language);
 
-  const languages = [
-    { name: 'python', title: 'Python Mastery', isPython: true },
-    { name: 'dsa with python', title: 'DSA with Python', chapters: ['Arrays', 'Linked Lists', 'Trees'] },
-    { name: 'js', title: 'JavaScript Essentials', chapters: ['Variables', 'Functions', 'DOM'] },
-    { name: 'ts', title: 'TypeScript Pro', chapters: ['Types', 'Interfaces', 'Generics'] },
-    { name: 'html', title: 'HTML Structure', chapters: ['Tags', 'Forms', 'Semantic UI'] },
-    { name: 'css', title: 'CSS Styling', chapters: ['Flexbox', 'Grid', 'Animations'] }
-  ];
-
-  for (let langIdx = 0; langIdx < languages.length; langIdx++) {
-    const lang = languages[langIdx];
+  for (let langIdx = 0; langIdx < SUPPORTED_LANGUAGES.length; langIdx++) {
+    const lang = SUPPORTED_LANGUAGES[langIdx];
     
-    const langId = `lang-${lang.name.toLowerCase().replace(/\s+/g, '-')}`;
     await db.insert(language).values({
-      id: langId,
+      id: lang.id,
       name: lang.name,
       title: lang.title,
+      description: lang.description,
       order: langIdx + 1
+    }).onConflictDoUpdate({
+      target: language.id,
+      set: {
+        name: lang.name,
+        title: lang.title,
+        description: lang.description,
+        order: langIdx + 1
+      }
     });
 
     const newSection = await db.insert(section).values({
       id: `section-${lang.name.toLowerCase().replace(/\s+/g, '-')}`,
       title: lang.title,
-      languageId: langId,
+      languageId: lang.id,
       order: 1
     }).returning();
 
-    if (lang.isPython) {
+    if (lang.name === 'python') {
       // Use the rich content from pythonCourse
       for (let sIdx = 0; sIdx < pythonCourse.length; sIdx++) {
         const s = pythonCourse[sIdx];
-        // We already created the main section, but pythonCourse has its own sections.
-        // Let's treat pythonCourse sections as chapters if we want to keep it simple,
-        // or just use the first section's chapters.
-        // Actually, let's just map pythonCourse directly.
         for (let cIdx = 0; cIdx < s.chapters.length; cIdx++) {
           const chap = s.chapters[cIdx];
           const newChapter = await db.insert(chapter).values({
@@ -176,9 +173,11 @@ export async function seedAllCoursesAction() {
           }
         }
       }
-    } else if (lang.chapters) {
-      for (let i = 0; i < lang.chapters.length; i++) {
-        const chapterName = lang.chapters[i];
+    } else {
+      // Default chapters for other languages if needed, or just leave it for manual import
+      const defaultChapters = ['Introduction', 'Fundamentals', 'Advanced Concepts'];
+      for (let i = 0; i < defaultChapters.length; i++) {
+        const chapterName = defaultChapters[i];
         const newChapter = await db.insert(chapter).values({
           id: `chapter-${lang.name.toLowerCase().replace(/\s+/g, '-')}-${i}`,
           title: chapterName,
@@ -519,6 +518,9 @@ export async function importNestedCourseAction(data: any) {
   if (currentUser?.role !== 'admin') throw new Error("Unauthorized");
 
   const langName = data.language || 'python';
+  const isSupported = SUPPORTED_LANGUAGES.some(l => l.name === langName);
+  if (!isSupported) throw new Error(`Language "${langName}" is not supported. Supported languages: ${SUPPORTED_LANGUAGES.map(l => l.name).join(', ')}`);
+
   const lang = await db.query.language.findFirst({
     where: eq(language.name, langName),
   });
@@ -869,4 +871,47 @@ export async function checkAndUnlockAchievementsAction() {
   }
 
   return newUnlocks;
+}
+
+export async function deleteAllCoursesAction() {
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session?.user) throw new Error("Unauthorized");
+  
+  const currentUser = await db.query.user.findFirst({ where: eq(user.id, session.user.id) });
+  if (currentUser?.role !== 'admin') throw new Error("Unauthorized");
+
+  await db.delete(userProgress);
+  await db.delete(lesson);
+  await db.delete(chapter);
+  await db.delete(section);
+
+  revalidateTag('course-content');
+  revalidateTag('all-course-content');
+  return { success: true };
+}
+
+export async function getLlmsTxtAction() {
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session?.user) throw new Error("Unauthorized");
+  
+  const currentUser = await db.query.user.findFirst({ where: eq(user.id, session.user.id) });
+  if (currentUser?.role !== 'admin') throw new Error("Unauthorized");
+
+  const filePath = path.join(process.cwd(), "public", "llms.txt");
+  if (fs.existsSync(filePath)) {
+    return fs.readFileSync(filePath, "utf-8");
+  }
+  return "";
+}
+
+export async function updateLlmsTxtAction(content: string) {
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session?.user) throw new Error("Unauthorized");
+  
+  const currentUser = await db.query.user.findFirst({ where: eq(user.id, session.user.id) });
+  if (currentUser?.role !== 'admin') throw new Error("Unauthorized");
+
+  const filePath = path.join(process.cwd(), "public", "llms.txt");
+  fs.writeFileSync(filePath, content, "utf-8");
+  return { success: true };
 }
