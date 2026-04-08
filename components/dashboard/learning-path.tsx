@@ -17,7 +17,7 @@ interface LearningPathProps {
   onRevertProgress?: (lessonId: string) => void;
 }
 
-export function LearningPath({
+export default function LearningPath({
   courseData = [],
   completedLessons = [],
   role,
@@ -137,7 +137,7 @@ export function LearningPath({
 
                         <div 
                           onClick={() => onLessonClick(lesson.id, isLocked)}
-                          className={`relative cursor-pointer ${isLocked ? "cursor-not-allowed" : ""}`}
+                          className={`relative cursor-pointer ${isLocked ? "cursor-not-allowed" : ""} ${globalIndex === 0 ? "first-lesson" : ""}`}
                         >
                           <motion.div
                             whileHover={!isLocked ? { scale: 1.15 } : {}}

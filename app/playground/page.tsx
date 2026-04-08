@@ -61,20 +61,23 @@ function PlaygroundContent() {
     if (lessonId) {
       const lesson = lessons.find(l => l.id === lessonId);
       if (lesson) {
-        setActiveLesson(lesson);
-        if (lesson.category === 'python') {
-          setEditorType('python');
-          if (lesson.initialCode.py) setPy(lesson.initialCode.py);
-        } else if (lesson.category === 'react') {
-          setEditorType('react');
-          if (lesson.initialCode.react) setReactCode(lesson.initialCode.react);
-        } else {
-          setEditorType('web');
-          if (lesson.initialCode.html) setHtml(lesson.initialCode.html);
-          if (lesson.initialCode.css) setCss(lesson.initialCode.css);
-          if (lesson.initialCode.js) setJs(lesson.initialCode.js);
-          if (lesson.initialCode.ts) setTs(lesson.initialCode.ts);
-        }
+        // Use a timeout to avoid synchronous setState during render
+        setTimeout(() => {
+          setActiveLesson(lesson);
+          if (lesson.category === 'python') {
+            setEditorType('python');
+            if (lesson.initialCode.py) setPy(lesson.initialCode.py);
+          } else if (lesson.category === 'react') {
+            setEditorType('react');
+            if (lesson.initialCode.react) setReactCode(lesson.initialCode.react);
+          } else {
+            setEditorType('web');
+            if (lesson.initialCode.html) setHtml(lesson.initialCode.html);
+            if (lesson.initialCode.css) setCss(lesson.initialCode.css);
+            if (lesson.initialCode.js) setJs(lesson.initialCode.js);
+            if (lesson.initialCode.ts) setTs(lesson.initialCode.ts);
+          }
+        }, 0);
       }
     }
   }, [lessonId]);

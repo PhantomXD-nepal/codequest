@@ -1,9 +1,7 @@
 "use client";
 
-import { Header } from "@/components/ui/header-2";
-import { Features } from "@/components/ui/features-8";
-import { CreativePricing, type PricingTier } from "@/components/ui/creative-pricing";
-import { Pencil, Star, Sparkles, Terminal, Code2, Cpu } from "lucide-react";
+import { LandingHeader, Hero } from "@/components/landing/hero";
+import { Star, Sparkles, Terminal, Code2, Cpu, ArrowRight, Shield, Zap, Users } from "lucide-react";
 import Link from "next/link";
 import { authClient } from "@/lib/auth-client";
 import { useEffect, useRef } from "react";
@@ -12,128 +10,37 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 
 gsap.registerPlugin(ScrollTrigger);
 
-const sampleTiers: PricingTier[] = [
-    {
-        name: "Student",
-        icon: <Pencil className="w-6 h-6" />,
-        price: 0,
-        description: "Perfect for coding beginners",
-        color: "amber",
-        features: [
-            "Access to Basic Tracks",
-            "Daily XP Rewards",
-            "Community Support",
-            "Public Profile",
-        ],
-    },
-    {
-        name: "Pro Developer",
-        icon: <Star className="w-6 h-6" />,
-        price: 19,
-        description: "For serious career switchers",
-        color: "blue",
-        features: [
-            "All Advanced Tracks",
-            "Unlimited Energy",
-            "Verified Certificates",
-            "Priority Support",
-        ],
-        popular: true,
-    },
-    {
-        name: "Master Studio",
-        icon: <Sparkles className="w-6 h-6" />,
-        price: 49,
-        description: "For teams and power users",
-        color: "purple",
-        features: [
-            "Team Leaderboards",
-            "Custom Learning Paths",
-            "API Access",
-            "1-on-1 Mentoring",
-        ],
-    },
-];
-
 export default function Home() {
   const { data: session } = authClient.useSession();
   const pageRef = useRef<HTMLDivElement>(null);
-  const heroRef = useRef<HTMLDivElement>(null);
   const featuresRef = useRef<HTMLDivElement>(null);
   const pricingRef = useRef<HTMLDivElement>(null);
-  const ctaRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // Hero Entrance
     const ctx = gsap.context(() => {
-      gsap.from(".hero-title", {
-        y: 100,
-        opacity: 0,
-        duration: 1,
-        ease: "power4.out",
-        delay: 0.2
-      });
-      
-      gsap.from(".hero-text", {
-        y: 50,
-        opacity: 0,
-        duration: 1,
-        ease: "power4.out",
-        delay: 0.4
-      });
-
-      gsap.from(".hero-btns", {
-        y: 30,
-        opacity: 0,
-        duration: 1,
-        ease: "power4.out",
-        delay: 0.6
-      });
-
-      // Scroll Reveals
-      gsap.from(".feature-header", {
+      // Scroll Reveals for sections
+      gsap.from(".reveal-up", {
         scrollTrigger: {
-          trigger: featuresRef.current,
-          start: "top 80%",
-        },
-        y: 50,
-        opacity: 0,
-        duration: 1,
-        ease: "power3.out"
-      });
-
-      gsap.from(".pricing-header", {
-        scrollTrigger: {
-          trigger: pricingRef.current,
-          start: "top 80%",
-        },
-        y: 50,
-        opacity: 0,
-        duration: 1,
-        ease: "power3.out"
-      });
-
-      gsap.from(".pricing-tier-card", {
-        scrollTrigger: {
-          trigger: pricingRef.current,
-          start: "top 70%",
+          trigger: ".reveal-up",
+          start: "top 85%",
         },
         y: 60,
         opacity: 0,
-        duration: 0.8,
+        duration: 1,
         stagger: 0.2,
-        ease: "power2.out"
+        ease: "power3.out"
       });
 
-      gsap.from(".cta-content", {
+      gsap.from(".feature-card", {
         scrollTrigger: {
-          trigger: ctaRef.current,
-          start: "top 80%",
+          trigger: "#features",
+          start: "top 90%",
         },
-        scale: 0.9,
+        y: 30,
         opacity: 0,
-        duration: 1,
-        ease: "back.out(1.7)"
+        duration: 0.5,
+        stagger: 0.1,
+        ease: "power2.out"
       });
     }, pageRef.current || undefined);
 
@@ -141,155 +48,178 @@ export default function Home() {
   }, []);
 
   return (
-    <div ref={pageRef} className="min-h-screen mc-container text-white flex flex-col selection:bg-yellow-400 selection:text-black">
-      <Header />
+    <div ref={pageRef} className="min-h-screen bg-[#070b0a] text-white flex flex-col selection:bg-[#5ed29c] selection:text-black font-inter">
+      <LandingHeader />
       
       <main className="flex-1">
-        {/* Editorial Hero Section */}
-        <section id="hero" ref={heroRef} className="relative min-h-[90vh] flex items-center justify-center overflow-hidden pt-20">
-          <div className="container mx-auto px-6 relative z-10">
-            <div className="flex flex-col items-center text-center">
-              <div className="inline-block mc-card px-4 py-1 mb-6 rotate-[-1deg] animate-bounce">
-                <span className="font-pixel text-[10px] text-black">SERVER STATUS: ONLINE</span>
-              </div>
-              
-              <h1 className="hero-title text-[12vw] md:text-[10vw] font-pixel leading-[0.85] tracking-tighter mc-text-shadow mb-8 uppercase">
-                CODE<br />
-                <span className="text-yellow-400">QUEST</span>
-              </h1>
-              
-              <div className="max-w-xl mx-auto space-y-8">
-                <p className="hero-text text-lg md:text-xl font-pixel text-zinc-400 leading-relaxed text-[12px] md:text-[14px]">
-                  THE ULTIMATE GAMIFIED CODING ODYSSEY. MASTER THE BLOCKS, BUILD THE FUTURE, AND CLAIM YOUR PLACE IN THE SOURCE CODE.
-                </p>
-                
-                <div className="hero-btns flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
-                  {session ? (
-                    <Link href="/dashboard" className="w-full sm:w-auto">
-                      <button className="mc-button mc-button-green px-12 py-6 font-pixel text-lg text-white mc-text-shadow w-full">
-                        ENTER WORLD
-                      </button>
-                    </Link>
-                  ) : (
-                    <>
-                      <Link href="/signup" className="w-full sm:w-auto">
-                        <button className="mc-button mc-button-green px-12 py-6 font-pixel text-lg text-white mc-text-shadow w-full">
-                          START QUEST
-                        </button>
-                      </Link>
-                      <Link href="/onboarding" className="w-full sm:w-auto">
-                        <button className="mc-button mc-button-blue px-12 py-6 font-pixel text-lg text-white mc-text-shadow w-full">
-                          TUTORIAL
-                        </button>
-                      </Link>
-                    </>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          {/* Background Elements */}
-          <div className="absolute inset-0 z-0 opacity-10 pointer-events-none">
-            <div className="absolute top-1/4 left-10 animate-pulse">
-              <Terminal size={120} className="text-yellow-400" />
-            </div>
-            <div className="absolute bottom-1/4 right-10 animate-bounce">
-              <Code2 size={160} className="text-blue-400" />
-            </div>
-            <div className="absolute top-1/2 right-1/4 -translate-y-1/2 rotate-12">
-              <Cpu size={200} className="text-purple-400" />
-            </div>
-          </div>
-          
-          {/* Grid Overlay */}
-          <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:40px_40px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)]" />
-        </section>
+        <Hero />
 
-        {/* Features Section */}
-        <section id="features" ref={featuresRef} className="py-24 relative border-t-4 border-black bg-[#0a0a0a]">
+        {/* Features Section - High End Redesign */}
+        <section id="features" ref={featuresRef} className="py-32 relative overflow-hidden border-t border-white/5">
           <div className="container mx-auto px-6">
-            <div className="feature-header flex flex-col md:flex-row items-end justify-between mb-16 gap-8">
-              <div className="max-w-2xl">
-                <h2 className="text-4xl md:text-6xl font-pixel mc-text-shadow mb-6 uppercase leading-none">
-                  YOUR <span className="text-yellow-400">ARSENAL</span>
-                </h2>
-                <p className="font-pixel text-zinc-500 text-[12px] leading-relaxed">
-                  EQUIP YOURSELF WITH THE MOST POWERFUL TOOLS IN THE DEV UNIVERSE.
-                </p>
-              </div>
-              <div className="hidden md:block">
-                <div className="mc-card p-4 rotate-3">
-                  <span className="font-pixel text-[10px] text-black">LEVEL 99 TECH STACK</span>
-                </div>
-              </div>
-            </div>
-            <Features />
-          </div>
-        </section>
-
-        {/* Pricing Section */}
-        <section id="pricing" ref={pricingRef} className="py-24 bg-black">
-          <div className="container mx-auto px-6">
-            <div className="pricing-header text-center mb-20">
-              <h2 className="text-4xl md:text-6xl font-pixel mb-6 mc-text-shadow uppercase">
-                CHOOSE YOUR <span className="text-blue-400">RANK</span>
+            <div className="max-w-3xl mb-24 reveal-up">
+              <span className="text-[#5ed29c] font-plus-jakarta font-bold text-[11px] uppercase tracking-[0.2em] mb-4 block">
+                The Arsenal
+              </span>
+              <h2 className="text-4xl md:text-6xl font-bold tracking-tight mb-6">
+                EQUIP YOURSELF WITH THE <br /> FUTURE OF <span className="text-[#5ed29c]">DEVELOPMENT.</span>
               </h2>
-              <p className="font-pixel text-zinc-500 text-[12px]">UNLOCK LEGENDARY PERKS AND EXCLUSIVE CONTENT</p>
+              <p className="text-white/60 text-lg max-w-xl">
+                Our platform provides everything you need to master modern coding, from interactive lessons to real-world projects.
+              </p>
             </div>
-            <div className="pricing-tier-card">
-              <CreativePricing 
-                tag="Level Up Your Career"
-                title="Choose Your Quest Path"
-                description="Unlock your potential with our flexible plans"
-                tiers={sampleTiers} 
-              />
+
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+              {/* Large Bento Box */}
+              <div className="feature-card group p-8 rounded-3xl bg-gradient-to-br from-white/[0.05] to-transparent border border-white/10 hover:border-[#5ed29c]/50 transition-all duration-500 md:col-span-2 md:row-span-2 relative overflow-hidden flex flex-col justify-between min-h-[400px]">
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,#5ed29c_0%,transparent_50%)] opacity-0 group-hover:opacity-10 transition-opacity duration-700" />
+                <div className="w-16 h-16 rounded-2xl bg-[#5ed29c]/10 flex items-center justify-center mb-8 group-hover:scale-110 transition-transform border border-[#5ed29c]/20 relative z-10">
+                  <Terminal size={32} className="text-[#5ed29c]" />
+                </div>
+                <div className="relative z-10 mt-auto">
+                  <h3 className="text-3xl font-bold mb-4 tracking-tight">INTERACTIVE IDE</h3>
+                  <p className="text-white/60 text-lg leading-relaxed max-w-md">
+                    Code directly in your browser with our powerful, integrated development environment. No setup required.
+                  </p>
+                </div>
+              </div>
+
+              {/* Medium Bento Box 1 */}
+              <div className="feature-card group p-8 rounded-3xl bg-white/[0.02] border border-white/5 hover:border-[#5ed29c]/30 transition-all duration-500 md:col-span-2 relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-r from-[#5ed29c]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <div className="flex items-start gap-6 relative z-10">
+                  <div className="w-12 h-12 rounded-xl bg-[#5ed29c]/10 flex items-center justify-center shrink-0 group-hover:rotate-12 transition-transform">
+                    <Zap className="text-[#5ed29c]" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold mb-2 tracking-tight">GAMIFIED LEARNING</h3>
+                    <p className="text-white/50 text-sm leading-relaxed">
+                      Level up your skills, earn XP, and compete on the leaderboard while you learn.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Medium Bento Box 2 */}
+              <div className="feature-card group p-8 rounded-3xl bg-white/[0.02] border border-white/5 hover:border-[#5ed29c]/30 transition-all duration-500 md:col-span-2 relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-l from-[#5ed29c]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <div className="flex items-start gap-6 relative z-10">
+                  <div className="w-12 h-12 rounded-xl bg-[#5ed29c]/10 flex items-center justify-center shrink-0 group-hover:-rotate-12 transition-transform">
+                    <Shield className="text-[#5ed29c]" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold mb-2 tracking-tight">CAREER READY</h3>
+                    <p className="text-white/50 text-sm leading-relaxed">
+                      Build a portfolio of real-world projects that will get you hired by top tech companies.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Pricing Section - High End Redesign */}
+        <section id="pricing" ref={pricingRef} className="py-32 bg-[#0a0a0a] border-t border-white/5">
+          <div className="container mx-auto px-6">
+            <div className="text-center mb-24 reveal-up">
+              <h2 className="text-4xl md:text-7xl font-bold tracking-tighter mb-8 uppercase">
+                COMPLETELY <span className="text-[#5ed29c]">FREE.</span>
+              </h2>
+              <p className="text-white/60 text-lg max-w-2xl mx-auto leading-relaxed">
+                Our mission is to democratize coding education. We believe every child should have the opportunity to learn the language of the future.
+              </p>
+            </div>
+
+            <div className="max-w-4xl mx-auto reveal-up">
+              <div className="relative p-12 rounded-3xl bg-gradient-to-b from-white/[0.05] to-transparent border border-white/10 overflow-hidden group">
+                <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-[#5ed29c] to-transparent opacity-50"></div>
+                
+                <div className="flex flex-col md:flex-row items-center gap-12">
+                  <div className="flex-1 text-center md:text-left">
+                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#5ed29c]/10 border border-[#5ed29c]/20 text-[#5ed29c] text-[10px] font-bold uppercase tracking-widest mb-6">
+                      <Sparkles size={12} />
+                      Community Driven
+                    </div>
+                    <h3 className="text-3xl font-bold mb-4">DONATIONS APPRECIATED</h3>
+                    <p className="text-white/50 text-sm leading-relaxed mb-8">
+                      CodeQuest is a 100% free platform. We rely on the generosity of our community to keep the servers running and continue developing new content for students worldwide.
+                    </p>
+                    <button className="bg-white text-black font-bold px-8 py-4 rounded-full text-sm uppercase tracking-wider hover:bg-[#5ed29c] transition-colors">
+                      Support the Mission
+                    </button>
+                  </div>
+                  <div className="w-full md:w-1/3 aspect-square rounded-2xl bg-white/[0.02] border border-white/5 flex items-center justify-center relative overflow-hidden">
+                    <div className="absolute inset-0 bg-[#5ed29c]/5 blur-3xl rounded-full"></div>
+                    <Users size={80} className="text-[#5ed29c]/20 relative z-10" />
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </section>
 
         {/* Final CTA */}
-        <section id="cta" ref={ctaRef} className="py-40 bg-yellow-400 text-black relative overflow-hidden">
-          <div className="absolute inset-0 opacity-10">
-             <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,#000_1px,transparent_1px)] bg-[size:20px_20px]" />
+        <section id="cta" className="py-48 relative overflow-hidden border-t border-white/5">
+          <div className="absolute inset-0 z-0 opacity-20">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,#5ed29c_1px,transparent_1px)] bg-[size:40px_40px]" />
           </div>
-          <div className="cta-content container mx-auto px-6 text-center relative z-10">
-            <h2 className="text-5xl md:text-8xl font-pixel mb-12 leading-[0.9] tracking-tighter uppercase">
-              READY TO<br />JOIN THE<br />SERVER?
+          
+          <div className="container mx-auto px-6 text-center relative z-10 reveal-up">
+            <h2 className="text-5xl md:text-8xl font-bold mb-12 leading-[1] tracking-tighter uppercase">
+              READY TO JOIN <br /> THE <span className="text-[#5ed29c]">QUEST?</span>
             </h2>
             <Link href="/signup">
-              <button className="mc-button mc-button-blue px-16 py-8 font-pixel text-2xl text-white mc-text-shadow hover:scale-105 transition-transform">
-                JOIN THE QUEST
+              <button className="group bg-[#5ed29c] text-[#070b0a] font-bold text-xl uppercase tracking-widest px-16 py-8 rounded-full flex items-center gap-4 mx-auto hover:bg-white transition-all duration-300">
+                Start Your Journey
+                <ArrowRight size={24} className="group-hover:translate-x-2 transition-transform" />
               </button>
             </Link>
           </div>
         </section>
       </main>
 
-      <footer className="py-16 border-t-4 border-black mc-card">
+      <footer className="py-20 border-t border-white/5 bg-[#070b0a]">
         <div className="container mx-auto px-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-12 items-center">
-            <div className="flex flex-col items-center md:items-start gap-4">
-              <div className="font-pixel text-3xl mc-text-shadow text-white">CodeQuest</div>
-              <p className="font-pixel text-[10px] text-zinc-500">GAMIFIED CODING EDUCATION FOR THE NEXT GENERATION.</p>
-            </div>
-            <div className="flex justify-center gap-12 font-pixel text-[12px]">
-              <a href="#" className="text-zinc-400 hover:text-yellow-400 transition-colors">DOCS</a>
-              <a href="#" className="text-zinc-400 hover:text-yellow-400 transition-colors">API</a>
-              <a href="#" className="text-zinc-400 hover:text-yellow-400 transition-colors">DISCORD</a>
-            </div>
-            <div className="flex flex-col items-center md:items-end gap-4">
-              <div className="font-pixel text-[10px] text-zinc-600">
-                © {new Date().getFullYear()} CODEQUEST STUDIOS
-              </div>
-              <div className="flex gap-4">
-                <div className="size-8 mc-card bg-zinc-800 flex items-center justify-center">
-                  <Terminal size={14} className="text-zinc-400" />
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-16">
+            <div className="col-span-1 md:col-span-2">
+              <div className="flex items-center gap-2 mb-6">
+                <div className="w-8 h-8 bg-white rounded-sm flex items-center justify-center">
+                  <span className="text-black font-bold text-xl">C</span>
                 </div>
-                <div className="size-8 mc-card bg-zinc-800 flex items-center justify-center">
-                  <Code2 size={14} className="text-zinc-400" />
-                </div>
+                <span className="text-white font-bold tracking-tighter text-xl">CODEQUEST</span>
               </div>
+              <p className="text-white/40 text-sm max-w-xs leading-relaxed">
+                Gamified coding education for the next generation of digital creators. Built with passion for the community.
+              </p>
+            </div>
+            
+            <div>
+              <h4 className="text-white font-bold text-xs uppercase tracking-widest mb-8">Platform</h4>
+              <ul className="space-y-4 text-sm text-white/40">
+                <li><Link href="/dashboard" className="hover:text-[#5ed29c] transition-colors">Dashboard</Link></li>
+                <li><Link href="/leaderboard" className="hover:text-[#5ed29c] transition-colors">Leaderboard</Link></li>
+                <li><Link href="/#features" className="hover:text-[#5ed29c] transition-colors">Features</Link></li>
+              </ul>
+            </div>
+
+            <div>
+              <h4 className="text-white font-bold text-xs uppercase tracking-widest mb-8">Connect</h4>
+              <ul className="space-y-4 text-sm text-white/40">
+                <li><a href="#" className="hover:text-[#5ed29c] transition-colors">Discord</a></li>
+                <li><a href="#" className="hover:text-[#5ed29c] transition-colors">Twitter</a></li>
+                <li><a href="#" className="hover:text-[#5ed29c] transition-colors">GitHub</a></li>
+              </ul>
+            </div>
+          </div>
+          
+          <div className="mt-20 pt-8 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-6">
+            <p className="text-white/20 text-[10px] uppercase tracking-widest">
+              © {new Date().getFullYear()} CODEQUEST STUDIOS. ALL RIGHTS RESERVED.
+            </p>
+            <div className="flex gap-8">
+              <Link href="/privacy" className="text-white/20 text-[10px] uppercase tracking-widest hover:text-white transition-colors">Privacy Policy</Link>
+              <Link href="/terms" className="text-white/20 text-[10px] uppercase tracking-widest hover:text-white transition-colors">Terms of Service</Link>
             </div>
           </div>
         </div>

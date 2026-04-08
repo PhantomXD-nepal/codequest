@@ -6,6 +6,7 @@ import { Trophy, Star, Zap, User, Settings, LogOut, BarChart2, Award, Shield, Da
 import { authClient } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
 import { makeMeAdminAction } from "@/app/actions";
+import Image from "next/image";
 
 interface SidebarStatsProps {
   xp: number;
@@ -16,7 +17,7 @@ interface SidebarStatsProps {
   onAddSection: () => void;
 }
 
-export function SidebarStats({
+export default function SidebarStats({
   xp,
   streak,
   rank,
@@ -33,9 +34,15 @@ export function SidebarStats({
       {/* Profile Card */}
       <div className="bg-[#1e1e1e] border-4 border-[#000] p-6 rounded-xl shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
         <div className="flex items-center gap-4 mb-6">
-          <div className="w-12 h-12 bg-[#39ff14] border-2 border-[#000] rounded-lg flex items-center justify-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] overflow-hidden">
+          <div className="w-12 h-12 bg-[#39ff14] border-2 border-[#000] rounded-lg flex items-center justify-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] overflow-hidden relative">
             {session?.user?.image ? (
-              <img src={session.user.image} alt={userName} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+              <Image 
+                src={session.user.image} 
+                alt={userName} 
+                fill 
+                className="object-cover" 
+                referrerPolicy="no-referrer" 
+              />
             ) : (
               <User className="w-6 h-6 text-black" />
             )}
@@ -50,14 +57,14 @@ export function SidebarStats({
         </div>
 
         <div className="space-y-4">
-          <div className="bg-[#0d0d0d] p-4 rounded-lg border-2 border-[#333] flex items-center justify-between group hover:border-[#39ff14]/50 transition-colors">
+          <div className="bg-[#0d0d0d] p-4 rounded-lg border-2 border-[#333] flex items-center justify-between group hover:border-[#39ff14]/50 transition-colors xp-stat">
             <div className="flex items-center gap-3">
               <Zap className="w-4 h-4 text-[#39ff14]" />
               <span className="font-pixel text-[10px] text-[#888] group-hover:text-white transition-colors uppercase">EXPERIENCE</span>
             </div>
             <span className="font-pixel text-xs text-[#39ff14]">{xp} XP</span>
           </div>
-          <div className="bg-[#0d0d0d] p-4 rounded-lg border-2 border-[#333] flex items-center justify-between group hover:border-[#39ff14]/50 transition-colors">
+          <div className="bg-[#0d0d0d] p-4 rounded-lg border-2 border-[#333] flex items-center justify-between group hover:border-[#39ff14]/50 transition-colors streak-stat">
             <div className="flex items-center gap-3">
               <Star className="w-4 h-4 text-yellow-400" />
               <span className="font-pixel text-[10px] text-[#888] group-hover:text-white transition-colors uppercase">STREAK</span>
@@ -65,6 +72,7 @@ export function SidebarStats({
             <span className="font-pixel text-xs text-yellow-400">{streak} DAYS</span>
           </div>
           <div className="bg-[#0d0d0d] p-4 rounded-lg border-2 border-[#333] flex items-center justify-between group hover:border-[#39ff14]/50 transition-colors">
+
             <div className="flex items-center gap-3">
               <Trophy className="w-4 h-4 text-orange-400" />
               <span className="font-pixel text-[10px] text-[#888] group-hover:text-white transition-colors uppercase">RANK</span>
@@ -75,7 +83,7 @@ export function SidebarStats({
       </div>
 
       {/* Admin Panel */}
-      {role === 'admin' ? (
+      {role === 'admin' && (
         <div className="bg-[#1e1e1e] border-4 border-[#000] p-6 rounded-xl shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
           <h3 className="font-pixel text-[10px] text-[#39ff14] mb-6 flex items-center gap-2 uppercase">
             <Shield className="w-3 h-3" />
@@ -98,17 +106,6 @@ export function SidebarStats({
             </button>
           </div>
         </div>
-      ) : (
-        <button 
-          onClick={async () => {
-            await makeMeAdminAction();
-            setRole('admin');
-          }}
-          className="w-full p-4 bg-[#1e1e1e] border-4 border-[#000] rounded-xl shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] font-pixel text-[10px] text-[#888] hover:text-[#39ff14] hover:border-[#39ff14]/50 transition-all uppercase flex items-center justify-center gap-3"
-        >
-          <Shield className="w-4 h-4" />
-          BECOME ADMIN
-        </button>
       )}
 
       {/* Quick Actions */}

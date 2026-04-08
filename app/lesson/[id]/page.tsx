@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { completeLessonAction, getLessonDetailsAction, getUserStatsAction } from "@/app/actions";
+import { playSuccessSound } from "@/lib/confetti";
 
 export default function LessonPage() {
   const { data: session, isPending } = authClient.useSession();
@@ -179,6 +180,7 @@ export default function LessonPage() {
           setShowSuccess(true);
           
           // Trigger confetti
+          playSuccessSound();
           confetti({
             particleCount: 100,
             spread: 70,
@@ -253,6 +255,7 @@ export default function LessonPage() {
           setIsCompleted(true);
           setShowSuccess(true);
           
+          playSuccessSound();
           confetti({
             particleCount: 100,
             spread: 70,
@@ -297,6 +300,7 @@ export default function LessonPage() {
         setIsCompleted(true);
         setShowSuccess(true);
         
+        playSuccessSound();
         confetti({
           particleCount: 100,
           spread: 70,
@@ -421,7 +425,7 @@ export default function LessonPage() {
               <motion.div 
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-[#39ff14]/10 border border-[#39ff14]/30 p-6 rounded-xl space-y-4"
+                className="bg-[#39ff14]/10 border border-[#39ff14]/30 p-6 rounded-xl space-y-4 lesson-complete-modal"
               >
                 <div className="flex items-center gap-2 text-[#39ff14]">
                   <CheckCircle2 className="w-6 h-6" />
@@ -544,7 +548,7 @@ export default function LessonPage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 lesson-complete-modal"
           >
             <motion.div 
               initial={{ scale: 0.5, y: 50, rotateX: 45, opacity: 0 }}

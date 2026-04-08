@@ -19,7 +19,7 @@ interface AdminEditorProps {
   language: string;
 }
 
-export function AdminEditor({
+export default function AdminEditor({
   isEditorOpen,
   setIsEditorOpen,
   editorType,

@@ -15,7 +15,7 @@ interface LanguageSelectProps {
   fetchCourse: () => void;
 }
 
-export function LanguageSelect({
+export default function LanguageSelect({
   availableLanguages,
   role,
   setAvailableLanguages,

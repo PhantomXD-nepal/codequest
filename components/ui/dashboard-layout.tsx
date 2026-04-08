@@ -6,6 +6,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Component as LumaSpin } from "@/components/ui/luma-spin";
 import { getUserStatsAction } from "@/app/actions";
+import { Mascot } from "@/components/ui/mascot";
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { data: session, isPending } = authClient.useSession();
@@ -184,6 +185,8 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           {children}
         </div>
       </div>
+
+      <Mascot />
 
       {/* Mobile Sidebar Overlay */}
       {isSidebarOpen && (

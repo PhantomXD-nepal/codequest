@@ -12,12 +12,18 @@ import { Component as LumaSpin } from "@/components/ui/luma-spin";
 import { getUserStatsAction, makeMeAdminAction, getCourseContentByLanguageAction, createChapterAction, createLessonAction, createSectionAction, updateChapterAction, updateLessonAction, updateSectionAction, checkAndUnlockAchievementsAction, getUserRankAction, getLanguagesAction, seedAllCoursesAction, revertLessonProgressAction } from "@/app/actions";
 import { DashboardLayout } from "@/components/ui/dashboard-layout";
 import dynamic from "next/dynamic";
+import { type Step, type CallBackProps, STATUS } from 'react-joyride';
 
 // Dynamic imports for code splitting
-const LanguageSelect = dynamic(() => import("@/components/dashboard/language-select").then(mod => mod.LanguageSelect), { ssr: false });
-const AdminEditor = dynamic(() => import("@/components/dashboard/admin-editor").then(mod => mod.AdminEditor), { ssr: false });
-const LearningPath = dynamic(() => import("@/components/dashboard/learning-path").then(mod => mod.LearningPath), { ssr: false });
-const SidebarStats = dynamic(() => import("@/components/dashboard/sidebar-stats").then(mod => mod.SidebarStats), { ssr: false });
+const Joyride = dynamic(() => import('react-joyride').then((mod) => {
+  // Ensure we get the actual component function
+  const Component = mod.default || (mod as any).Joyride || mod;
+  return Component;
+}), { ssr: false });
+const LanguageSelect = dynamic(() => import("@/components/dashboard/language-select"), { ssr: false });
+const AdminEditor = dynamic(() => import("@/components/dashboard/admin-editor"), { ssr: false });
+const LearningPath = dynamic(() => import("@/components/dashboard/learning-path"), { ssr: false });
+const SidebarStats = dynamic(() => import("@/components/dashboard/sidebar-stats"), { ssr: false });
 
 export default function DashboardClientPage({ 
   initialCourseData, 
@@ -61,6 +67,32 @@ export default function DashboardClientPage({
   });
   const [isSaving, setIsSaving] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(initialStats.xp === 0 && initialStats.completedLessons.length === 0);
+  const [runTour, setRunTour] = useState(false);
+
+  const tourSteps: Step[] = [
+    {
+      target: '.xp-stat',
+      content: 'This is your XP. Earn XP by completing lessons and challenges!',
+      disableBeacon: true,
+    },
+    {
+      target: '.streak-stat',
+      content: 'Keep your daily streak alive by coding every day!',
+    },
+    {
+      target: '.first-lesson',
+      content: 'Click here to start your very first lesson!',
+    }
+  ];
+
+  const handleJoyrideCallback = (data: CallBackProps) => {
+    const { status } = data;
+    const finishedStatuses: string[] = [STATUS.FINISHED, STATUS.SKIPPED];
+
+    if (finishedStatuses.includes(status)) {
+      setRunTour(false);
+    }
+  };
 
   const fetchCourse = useCallback(async () => {
     setIsLoadingCourse(true);
@@ -74,6 +106,7 @@ export default function DashboardClientPage({
     }
   }, [language]);
 
+  const [isFirstLoadStats, setIsFirstLoadStats] = useState(true);
   useEffect(() => {
     async function fetchStats() {
       try {
@@ -97,12 +130,21 @@ export default function DashboardClientPage({
     }
 
     if (session) {
+      if (isFirstLoadStats) {
+        setIsFirstLoadStats(false);
+        return;
+      }
       fetchStats();
     }
   }, [session]);
 
+  const [isFirstLoadCourse, setIsFirstLoadCourse] = useState(true);
   useEffect(() => {
     if (session) {
+      if (isFirstLoadCourse) {
+        setIsFirstLoadCourse(false);
+        return;
+      }
       fetchCourse();
     }
   }, [session, language, fetchCourse]);
@@ -228,6 +270,41 @@ export default function DashboardClientPage({
 
   return (
     <DashboardLayout>
+      <Joyride
+        steps={tourSteps}
+        run={runTour}
+        continuous={true}
+        showProgress={true}
+        showSkipButton={true}
+        callback={handleJoyrideCallback}
+        styles={{
+          options: {
+            primaryColor: '#39ff14',
+            backgroundColor: '#1a1a1a',
+            textColor: '#fff',
+            arrowColor: '#1a1a1a',
+          },
+          tooltipContainer: {
+            fontFamily: 'var(--font-pixel)',
+            fontSize: '12px',
+          },
+          buttonNext: {
+            fontFamily: 'var(--font-pixel)',
+            fontSize: '10px',
+            color: '#000',
+          },
+          buttonBack: {
+            fontFamily: 'var(--font-pixel)',
+            fontSize: '10px',
+            color: '#fff',
+          },
+          buttonSkip: {
+            fontFamily: 'var(--font-pixel)',
+            fontSize: '10px',
+            color: '#888',
+          }
+        }}
+      />
       {/* Onboarding Modal */}
       {showOnboarding && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
@@ -240,7 +317,10 @@ export default function DashboardClientPage({
             <h2 className="font-pixel text-3xl text-white mb-4">WELCOME TO <span className="text-[#39ff14]">THE QUEST</span></h2>
             <p className="font-pixel text-[10px] text-[#aaa] mb-8">YOUR JOURNEY TO BECOMING A MASTER CODER BEGINS HERE.</p>
             <button 
-              onClick={() => setShowOnboarding(false)}
+              onClick={() => {
+                setShowOnboarding(false);
+                setRunTour(true);
+              }}
               className="w-full bg-[#39ff14] text-black font-pixel text-sm py-4 rounded-lg hover:bg-white transition-colors"
             >
               START MY JOURNEY

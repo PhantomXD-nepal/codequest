@@ -16,33 +16,29 @@ const SignUp1 = () => {
   const [email, setEmail] = React.useState("");
   const [password, setPassword] = React.useState("");
   const [error, setError] = React.useState("");
+  const [isLoading, setIsLoading] = React.useState(false);
   const router = useRouter();
   
   const containerRef = useRef<HTMLDivElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
-  const elementsRef = useRef<HTMLDivElement[]>([]);
 
   useGSAP(() => {
     const tl = gsap.timeline({ defaults: { ease: "power3.out" } });
     
     tl.fromTo(cardRef.current, 
-      { opacity: 0, x: 50, scale: 0.95 },
-      { opacity: 1, x: 0, scale: 1, duration: 1 }
-    );
-
-    tl.fromTo(elementsRef.current,
-      { opacity: 0, x: 20 },
-      { opacity: 1, x: 0, duration: 0.6, stagger: 0.1 },
-      "-=0.4"
+      { opacity: 0, y: 40 },
+      { opacity: 1, y: 0, duration: 1 }
     );
   }, { scope: containerRef });
   
-  const handleSignUp = async () => {
+  const handleSignUp = async (e: React.FormEvent) => {
+    e.preventDefault();
     if (!name || !email || !password) {
       setError("Please fill in all fields.");
       return;
     }
     setError("");
+    setIsLoading(true);
     
     const { data, error: authError } = await authClient.signUp.email({
       email,
@@ -53,161 +49,126 @@ const SignUp1 = () => {
 
     if (authError) {
       setError(authError.message || "Failed to sign up.");
+      setIsLoading(false);
     } else {
       router.push("/");
     }
   };
- 
-  const addToRefs = (el: any) => {
-    if (el && !elementsRef.current.includes(el)) {
-      elementsRef.current.push(el);
-    }
-  };
 
   return (
-    <div ref={containerRef} className="min-h-screen flex flex-col items-center justify-center mc-container relative overflow-hidden w-full font-pixel">
-      {/* Centered glass card */}
+    <div ref={containerRef} className="min-h-screen flex flex-col items-center justify-center bg-[#070b0a] relative overflow-hidden w-full font-inter selection:bg-[#5ed29c] selection:text-black">
+      {/* Background Elements */}
+      <div className="absolute inset-0 z-0 pointer-events-none">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-[#5ed29c]/5 rounded-full blur-[120px]" />
+        <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 mix-blend-overlay" />
+      </div>
+
       <div 
         ref={cardRef}
-        className="relative z-10 w-full max-w-sm mc-card p-8 flex flex-col items-center"
+        className="relative z-10 w-full max-w-md p-8 md:p-12 flex flex-col items-center"
       >
-        {/* Decorative elements */}
-        <div className="absolute -top-10 -left-10 w-20 h-20 opacity-20 pointer-events-none">
-          <Image 
-            src="https://picsum.photos/seed/mc3/100/100" 
-            alt="deco" 
-            width={100}
-            height={100}
-            className="mc-border"
-            referrerPolicy="no-referrer"
-          />
-        </div>
-        <div className="absolute -bottom-10 -right-10 w-20 h-20 opacity-20 pointer-events-none">
-          <Image 
-            src="https://picsum.photos/seed/mc4/100/100" 
-            alt="deco" 
-            width={100}
-            height={100}
-            className="mc-border"
-            referrerPolicy="no-referrer"
-          />
-        </div>
-
         {/* Logo */}
-        <div ref={addToRefs} className="flex items-center justify-center w-14 h-14 mc-border bg-zinc-700 mb-6">
-          <User className="text-white w-7 h-7" />
-        </div>
+        <Link href="/" className="flex items-center gap-2 mb-12 group">
+          <div className="w-10 h-10 bg-white rounded-sm flex items-center justify-center group-hover:bg-[#5ed29c] transition-colors duration-300">
+            <span className="text-black font-bold text-2xl">C</span>
+          </div>
+          <span className="text-white font-bold tracking-tighter text-2xl">CODEQUEST</span>
+        </Link>
         
-        {/* Title */}
-        <h2 ref={addToRefs} className="text-xl font-bold text-white mb-2 text-center mc-text-shadow">
-          CREATE ACCOUNT
-        </h2>
-        <p ref={addToRefs} className="text-zinc-400 text-[10px] mb-8 text-center uppercase">
-          Join the community
-        </p>
+        <div className="w-full text-center mb-10">
+          <h2 className="text-3xl font-bold text-white mb-3 tracking-tight">
+            Create account
+          </h2>
+          <p className="text-white/50 text-sm">
+            Join the community of developers
+          </p>
+        </div>
 
         {/* Form */}
-        <div className="flex flex-col w-full gap-4">
-          <div className="w-full flex flex-col gap-3">
-            <div ref={addToRefs} className="relative group">
+        <form onSubmit={handleSignUp} className="flex flex-col w-full gap-5">
+          <div className="flex flex-col gap-4">
+            <div className="relative group">
+              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-white/30 group-focus-within:text-[#5ed29c] transition-colors">
+                <User size={18} />
+              </div>
               <input
-                placeholder="FULL NAME"
+                placeholder="Full name"
                 type="text"
                 value={name}
-                className="w-full px-5 py-3 bg-zinc-800 border-4 border-black text-white placeholder-zinc-500 text-[10px] focus:outline-none focus:border-yellow-400 transition-all"
+                className="w-full pl-12 pr-4 py-4 bg-white/[0.03] border border-white/10 rounded-xl text-white placeholder-white/30 text-sm focus:outline-none focus:border-[#5ed29c]/50 focus:bg-white/[0.05] transition-all"
                 onChange={(e) => setName(e.target.value)}
               />
             </div>
-            <div ref={addToRefs} className="relative group">
+            <div className="relative group">
+              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-white/30 group-focus-within:text-[#5ed29c] transition-colors">
+                <Mail size={18} />
+              </div>
               <input
-                placeholder="EMAIL"
+                placeholder="Email address"
                 type="email"
                 value={email}
-                className="w-full px-5 py-3 bg-zinc-800 border-4 border-black text-white placeholder-zinc-500 text-[10px] focus:outline-none focus:border-yellow-400 transition-all"
+                className="w-full pl-12 pr-4 py-4 bg-white/[0.03] border border-white/10 rounded-xl text-white placeholder-white/30 text-sm focus:outline-none focus:border-[#5ed29c]/50 focus:bg-white/[0.05] transition-all"
                 onChange={(e) => setEmail(e.target.value)}
               />
             </div>
-            <div ref={addToRefs} className="relative group">
+            <div className="relative group">
+              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-white/30 group-focus-within:text-[#5ed29c] transition-colors">
+                <Lock size={18} />
+              </div>
               <input
-                placeholder="PASSWORD"
+                placeholder="Password"
                 type="password"
                 value={password}
-                className="w-full px-5 py-3 bg-zinc-800 border-4 border-black text-white placeholder-zinc-500 text-[10px] focus:outline-none focus:border-yellow-400 transition-all"
+                className="w-full pl-12 pr-4 py-4 bg-white/[0.03] border border-white/10 rounded-xl text-white placeholder-white/30 text-sm focus:outline-none focus:border-[#5ed29c]/50 focus:bg-white/[0.05] transition-all"
                 onChange={(e) => setPassword(e.target.value)}
               />
             </div>
             {error && (
-              <div className="text-[8px] text-red-500 px-2 mt-1 mc-text-shadow">{error}</div>
+              <div className="text-sm text-red-400 px-1">{error}</div>
             )}
           </div>
 
-          <div ref={addToRefs} className="pt-2">
-            <button
-              onClick={handleSignUp}
-              className="w-full mc-button mc-button-green py-4 text-white text-[12px] mc-text-shadow flex items-center justify-center gap-2"
-            >
-              SIGN UP
-              <ArrowRight className="w-4 h-4" />
-            </button>
-          </div>
+          <button
+            type="submit"
+            disabled={isLoading}
+            className="w-full group bg-[#5ed29c] text-[#070b0a] font-bold text-sm uppercase tracking-widest py-4 rounded-xl flex items-center justify-center gap-3 hover:bg-white transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed mt-2"
+          >
+            {isLoading ? "Creating..." : "Sign Up"}
+            {!isLoading && <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />}
+          </button>
 
-          <div ref={addToRefs} className="relative py-2">
+          <div className="relative py-6">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t-4 border-black/20"></div>
+              <div className="w-full border-t border-white/10"></div>
             </div>
-            <div className="relative flex justify-center text-[8px] uppercase">
-              <span className="bg-[#c6c6c6] px-2 text-zinc-600">Or sign up with</span>
+            <div className="relative flex justify-center text-xs uppercase tracking-widest">
+              <span className="bg-[#070b0a] px-4 text-white/30">Or sign up with</span>
             </div>
           </div>
 
-          <div ref={addToRefs} className="grid grid-cols-2 gap-3">
-            <button className="mc-button py-3 text-white text-[10px] mc-text-shadow flex items-center justify-center gap-2">
+          <div className="grid grid-cols-2 gap-4">
+            <button type="button" className="py-3 px-4 bg-white/[0.03] border border-white/10 rounded-xl text-white text-xs font-medium flex items-center justify-center gap-3 hover:bg-white/[0.08] transition-colors">
               <Chrome className="w-4 h-4" />
-              GOOGLE
+              Google
             </button>
-            <button className="mc-button py-3 text-white text-[10px] mc-text-shadow flex items-center justify-center gap-2">
+            <button type="button" className="py-3 px-4 bg-white/[0.03] border border-white/10 rounded-xl text-white text-xs font-medium flex items-center justify-center gap-3 hover:bg-white/[0.08] transition-colors">
               <Github className="w-4 h-4" />
-              GITHUB
+              GitHub
             </button>
           </div>
 
-          <div ref={addToRefs} className="w-full text-center mt-4">
-            <span className="text-[8px] text-zinc-600">
+          <div className="w-full text-center mt-8">
+            <span className="text-sm text-white/50">
               Already have an account?{" "}
               <Link
                 href="/signin"
-                className="text-black font-bold hover:underline"
+                className="text-white font-medium hover:text-[#5ed29c] transition-colors"
               >
-                SIGN IN
+                Sign in
               </Link>
             </span>
           </div>
-        </div>
-      </div>
-
-      {/* Social Proof */}
-      <div ref={addToRefs} className="relative z-10 mt-12 flex flex-col items-center text-center">
-        <p className="text-zinc-500 text-sm mb-4">
-          Trusted by <span className="font-medium text-white">50,000+</span> developers worldwide.
-        </p>
-        <div className="flex -space-x-3">
-          {[
-            "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop",
-            "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop",
-            "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&h=100&fit=crop",
-            "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=100&h=100&fit=crop"
-          ].map((src, i) => (
-            <div key={i} className="relative w-10 h-10 rounded-full border-2 border-[#0a0a0a] overflow-hidden">
-              <Image
-                src={src}
-                alt="user"
-                fill
-                className="object-cover"
-                referrerPolicy="no-referrer"
-              />
-            </div>
-          ))}
-        </div>
+        </form>
       </div>
     </div>
   );
