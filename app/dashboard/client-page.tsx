@@ -12,7 +12,7 @@ import { Component as LumaSpin } from "@/components/ui/luma-spin";
 import { getUserStatsAction, makeMeAdminAction, getCourseContentByLanguageAction, createChapterAction, createLessonAction, createSectionAction, updateChapterAction, updateLessonAction, updateSectionAction, checkAndUnlockAchievementsAction, getUserRankAction, getLanguagesAction, seedAllCoursesAction, revertLessonProgressAction } from "@/app/actions";
 import { DashboardLayout } from "@/components/ui/dashboard-layout";
 import dynamic from "next/dynamic";
-import { type Step, type CallBackProps, STATUS } from 'react-joyride';
+import { type Step, type EventData, STATUS } from 'react-joyride';
 import { OnboardingModal } from '@/components/dashboard/onboarding';
 import { CustomTooltip } from '@/components/dashboard/custom-tooltip';
 
@@ -111,7 +111,7 @@ export default function DashboardClientPage({
     }
   ];
 
-  const handleJoyrideCallback = (data: CallBackProps) => {
+  const handleJoyrideCallback = (data: EventData) => {
     const { status } = data;
     const finishedStatuses: string[] = [STATUS.FINISHED, STATUS.SKIPPED];
 
@@ -325,7 +325,7 @@ export default function DashboardClientPage({
         run={runTour}
         continuous={true}
         showSkipButton={true}
-        callback={handleJoyrideCallback}
+        onEvent={handleJoyrideCallback}
         tooltipComponent={CustomTooltip}
         styles={{
           options: {
