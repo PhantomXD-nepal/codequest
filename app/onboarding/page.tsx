@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ArrowRight, ArrowLeft, Terminal, Zap, Shield, CheckCircle2 } from 'lucide-react';
 import Link from 'next/link';
+import { Owl } from '@/components/ui/owl';
 
 const steps = [
   {
@@ -11,28 +12,28 @@ const steps = [
     title: "Welcome to CodeQuest",
     description: "Your journey to mastering code starts here. We've built a platform that makes learning interactive, engaging, and effective.",
     icon: <Terminal size={48} className="text-[#5ed29c]" />,
-    image: "https://picsum.photos/seed/codequest1/800/600?blur=4"
+    owlState: "talking" as const
   },
   {
     id: 2,
     title: "Interactive IDE",
     description: "Write, run, and debug code directly in your browser. No complex setup required. Just jump in and start coding.",
     icon: <Zap size={48} className="text-[#5ed29c]" />,
-    image: "https://picsum.photos/seed/codequest2/800/600?blur=4"
+    owlState: "happy" as const
   },
   {
     id: 3,
     title: "Gamified Learning",
     description: "Earn XP, unlock achievements, and compete on the leaderboard. Learning to code has never been this fun.",
     icon: <Shield size={48} className="text-[#5ed29c]" />,
-    image: "https://picsum.photos/seed/codequest3/800/600?blur=4"
+    owlState: "idle" as const
   },
   {
     id: 4,
     title: "Ready to Begin?",
     description: "Create your account today and join thousands of other developers on their quest to mastery.",
     icon: <CheckCircle2 size={48} className="text-[#5ed29c]" />,
-    image: "https://picsum.photos/seed/codequest4/800/600?blur=4"
+    owlState: "happy" as const
   }
 ];
 
@@ -72,36 +73,21 @@ export default function OnboardingPage() {
 
         <div className="w-full max-w-5xl grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
           {/* Left Side - Image/Visual */}
-          <div className="relative aspect-square md:aspect-auto md:h-[600px] rounded-3xl overflow-hidden border border-white/10 bg-white/[0.02]">
+          <div className="relative aspect-square md:aspect-auto md:h-[600px] rounded-3xl overflow-hidden border border-white/10 bg-white/[0.02] flex items-center justify-center">
             <AnimatePresence mode="wait">
-              <motion.img
+              <motion.div
                 key={currentStep}
-                src={steps[currentStep].image}
-                alt={steps[currentStep].title}
-                initial={{ opacity: 0, scale: 1.05 }}
+                initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.95 }}
+                exit={{ opacity: 0, scale: 0.8 }}
                 transition={{ duration: 0.5 }}
-                className="absolute inset-0 w-full h-full object-cover opacity-60 mix-blend-luminosity"
-              />
+                className="w-64 h-64 md:w-96 md:h-96 z-10 relative"
+              >
+                <Owl state={steps[currentStep].owlState} />
+              </motion.div>
             </AnimatePresence>
-            <div className="absolute inset-0 bg-gradient-to-t from-[#070b0a] via-transparent to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#070b0a] via-transparent to-transparent z-0" />
             
-            {/* Icon Overlay */}
-            <div className="absolute inset-0 flex items-center justify-center">
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={currentStep}
-                  initial={{ opacity: 0, y: 20, scale: 0.8 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: -20, scale: 0.8 }}
-                  transition={{ duration: 0.5, delay: 0.2 }}
-                  className="w-32 h-32 rounded-3xl bg-[#070b0a]/80 backdrop-blur-xl border border-white/10 flex items-center justify-center shadow-2xl"
-                >
-                  {steps[currentStep].icon}
-                </motion.div>
-              </AnimatePresence>
-            </div>
           </div>
 
           {/* Right Side - Content */}

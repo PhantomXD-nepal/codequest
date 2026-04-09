@@ -13,7 +13,6 @@ import {
   deleteChapterAction, 
   deleteLessonAction 
 } from "@/app/actions";
-import { Component as LumaSpin } from "@/components/ui/luma-spin";
 import { ArrowLeft, BookOpen, Settings, Save, Edit2, Trash2, ChevronDown, ChevronRight, Plus } from "lucide-react";
 import Link from "next/link";
 
@@ -137,9 +136,9 @@ export default function AdminCoursesPage() {
 
   if (isPending || isAdmin === null || isLoading) {
     return (
-      <div className="min-h-screen bg-[#1a1a1a] flex flex-col items-center justify-center gap-6">
-        <LumaSpin />
-        <div className="text-white font-pixel text-xs animate-pulse">LOADING COURSE DATA...</div>
+      <div className="min-h-screen bg-[#0f0f0f] flex flex-col items-center justify-center gap-6">
+        <div className="w-16 h-16 border-4 border-[#333] border-t-[#39ff14] rounded-full animate-spin" />
+        <div className="text-[#39ff14] font-pixel text-xs animate-pulse tracking-widest">LOADING COURSE DATA...</div>
       </div>
     );
   }

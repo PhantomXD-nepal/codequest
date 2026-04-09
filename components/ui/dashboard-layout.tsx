@@ -4,7 +4,6 @@ import { useRouter, usePathname } from "next/navigation";
 import { LayoutDashboard, User, BarChart2, Home, Settings, LogOut, Menu, X, Zap, Star, Trophy, BookOpen } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
-import { Component as LumaSpin } from "@/components/ui/luma-spin";
 import { getUserStatsAction } from "@/app/actions";
 import { Mascot } from "@/components/ui/mascot";
 
@@ -42,9 +41,9 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 
   if (isPending || !session) {
     return (
-      <div className="min-h-screen bg-[#1a1a1a] flex flex-col items-center justify-center gap-6">
-        <LumaSpin />
-        <div className="text-white font-pixel text-xs animate-pulse">LOADING QUEST DATA...</div>
+      <div className="min-h-screen bg-[#0f0f0f] flex flex-col items-center justify-center gap-6">
+        <div className="w-16 h-16 border-4 border-[#333] border-t-[#39ff14] rounded-full animate-spin" />
+        <div className="text-[#39ff14] font-pixel text-xs animate-pulse tracking-widest">LOADING QUEST DATA...</div>
       </div>
     );
   }
@@ -53,11 +52,11 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const title = level < 5 ? "NOVICE" : level < 10 ? "APPRENTICE" : level < 20 ? "ADEPT" : "MASTER";
 
   const navLinks = [
-    { href: "/dashboard", label: "LEARN", icon: Home },
-    { href: "/lessons", label: "LESSONS", icon: BookOpen },
-    { href: "/leaderboard", label: "LEADERBOARD", icon: BarChart2 },
-    { href: "/profile", label: "PROFILE", icon: User },
-    { href: "/playground", label: "PLAYGROUND", icon: LayoutDashboard },
+    { href: "/dashboard", label: "LEARN", icon: Home, className: "nav-learn" },
+    { href: "/lessons", label: "LESSONS", icon: BookOpen, className: "nav-lessons" },
+    { href: "/leaderboard", label: "LEADERBOARD", icon: BarChart2, className: "nav-leaderboard" },
+    { href: "/profile", label: "PROFILE", icon: User, className: "nav-profile" },
+    { href: "/playground", label: "PLAYGROUND", icon: LayoutDashboard, className: "nav-playground" },
   ];
 
   return (
@@ -84,7 +83,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           <div className="flex items-center gap-4 mb-4">
             <div className="w-12 h-12 bg-[#333] border-2 border-black rounded-lg flex items-center justify-center overflow-hidden relative shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
               {session?.user?.image ? (
-                <Image src={session.user.image} alt="Avatar" fill className="object-cover" referrerPolicy="no-referrer" />
+                <img src={session.user.image} alt="Avatar" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
               ) : (
                 <User className="text-[#555]" />
               )}
@@ -120,7 +119,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
               <Link 
                 key={link.href} 
                 href={link.href} 
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-pixel text-[10px] transition-all group text-left ${
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-pixel text-[10px] transition-all group text-left ${link.className} ${
                   isActive 
                     ? 'bg-[#39ff14] text-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] border-2 border-black' 
                     : 'text-[#888] hover:text-[#39ff14] hover:bg-[#39ff14]/5'

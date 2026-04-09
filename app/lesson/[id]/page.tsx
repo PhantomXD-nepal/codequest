@@ -10,7 +10,6 @@ import { motion, AnimatePresence } from "motion/react";
 import gsap from "gsap";
 import confetti from "canvas-confetti";
 import ReactMarkdown from "react-markdown";
-import { Component as LumaSpin } from "@/components/ui/luma-spin";
 import { 
   Play, 
   ChevronLeft, 
@@ -307,11 +306,15 @@ export default function LessonPage() {
           origin: { y: 0.6 },
           colors: ['#39ff14', '#ffffff', '#000000']
         });
+        window.dispatchEvent(new CustomEvent('mascot-message', { detail: { message: "Lesson completed! You're amazing! 🎉", state: "happy" } }));
         
         try {
           const result = await completeLessonAction(lessonId, 25);
           if (result.newAchievements && result.newAchievements.length > 0) {
             setUnlockedAchievements(result.newAchievements);
+            import('@/lib/confetti').then((mod) => {
+              mod.playAchievementSound();
+            });
           }
         } catch (err) {
           console.error("Failed to update progress:", err);
@@ -337,9 +340,9 @@ export default function LessonPage() {
 
   if (isPending || !session || !lesson) {
     return (
-      <div className="min-h-screen bg-[#1a1a1a] flex flex-col items-center justify-center gap-6">
-        <LumaSpin />
-        <div className="text-white font-pixel text-xs animate-pulse">
+      <div className="min-h-screen bg-[#0f0f0f] flex flex-col items-center justify-center gap-6">
+        <div className="w-16 h-16 border-4 border-[#333] border-t-[#39ff14] rounded-full animate-spin" />
+        <div className="text-[#39ff14] font-pixel text-xs animate-pulse tracking-widest">
           LOADING LESSON...
         </div>
       </div>
@@ -378,7 +381,7 @@ export default function LessonPage() {
                 <BookOpen className="w-5 h-5" />
                 <h2 className="text-sm font-pixel uppercase tracking-tight">Learn</h2>
               </div>
-              <div className="text-[#aaa] leading-relaxed text-xs font-pixel markdown-content">
+              <div className="markdown-content">
                 <ReactMarkdown>{lesson.content}</ReactMarkdown>
               </div>
             </section>
@@ -399,7 +402,7 @@ export default function LessonPage() {
                   </button>
                 )}
               </div>
-              <div className="text-white font-pixel text-xs leading-relaxed markdown-content">
+              <div className="markdown-content">
                 <ReactMarkdown>{lesson.challenge}</ReactMarkdown>
               </div>
               
@@ -412,8 +415,8 @@ export default function LessonPage() {
                     className="overflow-hidden"
                   >
                     <div className="mt-4 p-4 bg-[#1a1a1a] border border-[#333] rounded-lg">
-                      <div className="text-[#aaa] font-pixel text-[10px] leading-relaxed markdown-content">
-                        <span className="text-yellow-400">HINT:</span> <ReactMarkdown>{lesson.hint}</ReactMarkdown>
+                      <div className="markdown-content">
+                        <span className="text-yellow-400 font-pixel text-[10px] block mb-2">HINT:</span> <ReactMarkdown>{lesson.hint}</ReactMarkdown>
                       </div>
                     </div>
                   </motion.div>
@@ -722,6 +725,21 @@ export default function LessonPage() {
         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
           background: #444;
         }
+        .markdown-content {
+          font-family: var(--font-sans), sans-serif;
+          font-size: 0.9rem;
+          line-height: 1.6;
+          color: #d1d5db;
+        }
+        .markdown-content h1, .markdown-content h2, .markdown-content h3 {
+          font-family: var(--font-pixel), sans-serif;
+          color: #39ff14;
+          margin-top: 1.5rem;
+          margin-bottom: 0.75rem;
+        }
+        .markdown-content h1 { font-size: 1.2rem; }
+        .markdown-content h2 { font-size: 1.1rem; }
+        .markdown-content h3 { font-size: 1rem; }
         .markdown-content p {
           margin-bottom: 1rem;
         }
@@ -730,20 +748,25 @@ export default function LessonPage() {
         }
         .markdown-content code {
           background: #2a2a2a;
-          padding: 0.1rem 0.3rem;
-          border-radius: 0.2rem;
-          font-family: monospace;
+          padding: 0.2rem 0.4rem;
+          border-radius: 0.25rem;
+          font-family: var(--font-mono), monospace;
+          font-size: 0.85em;
+          color: #5ed29c;
         }
         .markdown-content pre {
           background: #0d0d0d;
-          padding: 1rem;
+          padding: 1.25rem;
           border-radius: 0.5rem;
           overflow-x: auto;
-          margin-bottom: 1rem;
+          margin-bottom: 1.25rem;
+          border: 1px solid #333;
         }
         .markdown-content pre code {
           background: transparent;
           padding: 0;
+          color: #e5e7eb;
+          font-size: 0.9em;
         }
         .markdown-content ul, .markdown-content ol {
           margin-left: 1.5rem;
@@ -754,6 +777,10 @@ export default function LessonPage() {
         }
         .markdown-content ol {
           list-style-type: decimal;
+        }
+        .markdown-content a {
+          color: #39ff14;
+          text-decoration: underline;
         }
       `}</style>
     </div>

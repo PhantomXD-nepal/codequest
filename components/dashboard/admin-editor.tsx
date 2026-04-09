@@ -4,7 +4,6 @@ import React from "react";
 import { motion } from "motion/react";
 import { X, Save } from "lucide-react";
 import dynamic from "next/dynamic";
-import { Component as LumaSpin } from "@/components/ui/luma-spin";
 
 const Editor = dynamic(() => import("@monaco-editor/react").then(mod => mod.Editor), { ssr: false });
 
@@ -124,7 +123,7 @@ export default function AdminEditor({
             disabled={isSaving}
             className="px-8 py-2 bg-[#39ff14] text-black rounded-lg font-pixel text-[10px] flex items-center gap-2 hover:bg-[#32e012] transition-colors disabled:opacity-50"
           >
-            {isSaving ? <LumaSpin /> : <Save className="w-3 h-3" />}
+            {isSaving ? <div className="w-3 h-3 border-2 border-black border-t-transparent rounded-full animate-spin" /> : <Save className="w-3 h-3" />}
             SAVE {editorType.toUpperCase()}
           </button>
         </div>

@@ -36,3 +36,23 @@ export const playSuccessSound = () => {
     console.log('Audio not supported', e);
   }
 };
+
+export const playLevelUpSound = () => {
+  try {
+    const audio = new Audio('https://cdn.freesound.org/previews/122/122255_1074082-lq.mp3');
+    audio.volume = 0.5;
+    audio.play().catch(e => console.log('Audio play failed', e));
+  } catch (e) {
+    console.log('Audio not supported', e);
+  }
+};
+
+export const playAchievementSound = () => {
+  try {
+    const audio = new Audio('https://cdn.freesound.org/previews/270/270404_5123851-lq.mp3');
+    audio.volume = 0.5;
+    audio.play().catch(e => console.log('Audio play failed', e));
+  } catch (e) {
+    console.log('Audio not supported', e);
+  }
+};

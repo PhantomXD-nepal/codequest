@@ -17,10 +17,24 @@ const SignUp1 = () => {
   const [password, setPassword] = React.useState("");
   const [error, setError] = React.useState("");
   const [isLoading, setIsLoading] = React.useState(false);
+  const [avatar, setAvatar] = React.useState("");
   const router = useRouter();
   
   const containerRef = useRef<HTMLDivElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    const onboardingData = localStorage.getItem('onboarding_data');
+    if (onboardingData) {
+      try {
+        const { name: onboardingName, avatar: onboardingAvatar } = JSON.parse(onboardingData);
+        if (onboardingName) setName(onboardingName);
+        if (onboardingAvatar) setAvatar(onboardingAvatar);
+      } catch (e) {
+        console.error("Failed to parse onboarding data", e);
+      }
+    }
+  }, []);
 
   useGSAP(() => {
     const tl = gsap.timeline({ defaults: { ease: "power3.out" } });
@@ -44,6 +58,7 @@ const SignUp1 = () => {
       email,
       password,
       name,
+      image: avatar || undefined,
       callbackURL: "/",
     });
 

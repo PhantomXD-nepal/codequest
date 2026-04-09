@@ -1,11 +1,13 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
-import Hls from 'hls.js';
-import { ArrowRight, Menu, X } from 'lucide-react';
+import React, { useState } from 'react';
+import { ArrowRight, Menu, X, Terminal } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { authClient } from '@/lib/auth-client';
+import { Owl } from '@/components/ui/owl';
+import { OnboardingModal } from '@/components/dashboard/onboarding';
 
 export function LandingHeader() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -20,8 +22,8 @@ export function LandingHeader() {
     <>
       <header className="absolute top-0 left-0 w-full z-50 flex items-center justify-between px-8 py-6 md:px-16">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-white rounded-sm flex items-center justify-center">
-            <span className="text-black font-bold text-xl">C</span>
+          <div className="w-8 h-8 bg-[#5ed29c] rounded-lg flex items-center justify-center shadow-[0_0_15px_rgba(94,210,156,0.5)]">
+            <Terminal size={18} className="text-[#070b0a]" />
           </div>
           <span className="text-white font-bold tracking-tighter text-xl hidden sm:block">CODEQUEST</span>
         </div>
@@ -39,11 +41,6 @@ export function LandingHeader() {
         </nav>
 
         <div className="hidden md:flex items-center gap-6">
-          <Link href="/onboarding">
-            <button className="text-white/70 hover:text-white text-xs font-bold uppercase tracking-widest transition-colors">
-              Onboarding
-            </button>
-          </Link>
           {session ? (
             <Link href="/dashboard">
               <button className="bg-[#5ed29c] text-[#070b0a] font-bold text-xs uppercase tracking-widest px-6 py-3 rounded-full hover:bg-white transition-all duration-300">
@@ -98,13 +95,6 @@ export function LandingHeader() {
                 {link.label}
               </a>
             ))}
-            <Link
-              href="/onboarding"
-              className="text-white text-3xl font-bold hover:text-[#5ed29c] transition-colors"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              ONBOARDING
-            </Link>
             
             <div className="flex flex-col items-center gap-4 mt-8">
               {session ? (
@@ -136,42 +126,13 @@ export function LandingHeader() {
 }
 
 export function Hero() {
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const hlsUrl = 'https://stream.mux.com/tLkHO1qZoaaQOUeVWo8hEBeGQfySP02EPS02BmnNFyXys.m3u8';
-
-  useEffect(() => {
-    if (videoRef.current) {
-      if (Hls.isSupported()) {
-        const hls = new Hls({
-          enableWorker: false,
-        });
-        hls.loadSource(hlsUrl);
-        hls.attachMedia(videoRef.current);
-        hls.on(Hls.Events.MANIFEST_PARSED, () => {
-          videoRef.current?.play().catch(e => console.error("Video play failed", e));
-        });
-
-        return () => {
-          hls.destroy();
-        };
-      } else if (videoRef.current.canPlayType('application/vnd.apple.mpegurl')) {
-        videoRef.current.src = hlsUrl;
-      }
-    }
-  }, []);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const router = useRouter();
 
   return (
     <section className="relative w-full h-screen overflow-hidden bg-[#070b0a] flex flex-col items-center justify-center px-6">
-      {/* Background Video */}
+      {/* Background Overlays */}
       <div className="absolute inset-0 z-0">
-        <video
-          ref={videoRef}
-          className="w-full h-full object-cover opacity-60"
-          muted
-          loop
-          playsInline
-        />
-        {/* Overlays */}
         <div className="absolute inset-0 bg-gradient-to-r from-[#070b0a] via-transparent to-transparent" />
         <div className="absolute inset-0 bg-gradient-to-t from-[#070b0a] via-transparent to-transparent opacity-80" />
       </div>
@@ -199,24 +160,45 @@ export function Hero() {
       </div>
 
       {/* Hero Content */}
-      <div className="relative z-20 flex flex-col items-center text-center max-w-4xl">
-        <span className="text-[#5ed29c] font-plus-jakarta font-bold text-[11px] uppercase tracking-[0.2em] mb-4">
+      <div className="hero-content relative z-20 flex flex-col items-center text-center max-w-4xl mt-24">
+        <motion.div 
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.8, ease: "easeOut" }}
+          className="w-48 h-48 md:w-64 md:h-64 mb-8"
+        >
+          <Owl state="happy" />
+        </motion.div>
+
+        <span className="hero-text text-[#5ed29c] font-plus-jakarta font-bold text-[11px] uppercase tracking-[0.2em] mb-4">
           Career-Ready Curriculum
         </span>
 
-        <h1 className="text-white font-inter font-extrabold text-4xl md:text-[72px] leading-[1.1] tracking-tight uppercase mb-6">
+        <h1 className="hero-text text-white font-inter font-extrabold text-4xl md:text-[72px] leading-[1.1] tracking-tight uppercase mb-6">
           LAUNCH YOUR CODING <br className="hidden md:block" /> CAREER<span className="text-[#5ed29c]">.</span>
         </h1>
 
-        <p className="text-white/70 font-inter text-sm md:text-base max-w-[512px] mb-10 leading-relaxed">
+        <p className="hero-text text-white/70 font-inter text-sm md:text-base max-w-[512px] mb-10 leading-relaxed">
           Master in-demand coding skills with our immersive, gamified platform. Build real-world projects and launch your career in tech.
         </p>
 
-        <button className="group bg-[#5ed29c] text-[#070b0a] font-inter font-bold text-sm uppercase tracking-wider px-8 py-4 rounded-full flex items-center gap-3 hover:bg-white transition-all duration-300">
-          Get Started
-          <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
-        </button>
+        <div className="hero-text">
+          <button 
+            onClick={() => setShowOnboarding(true)}
+            className="group bg-[#5ed29c] text-[#070b0a] font-inter font-bold text-sm uppercase tracking-wider px-8 py-4 rounded-full flex items-center gap-3 hover:bg-white transition-all duration-300"
+          >
+            Get Started
+            <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
+          </button>
+        </div>
       </div>
+
+      {showOnboarding && (
+        <OnboardingModal onComplete={() => {
+          setShowOnboarding(false);
+          router.push('/signup');
+        }} />
+      )}
     </section>
   );
 }

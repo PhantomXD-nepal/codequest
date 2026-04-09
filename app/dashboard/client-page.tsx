@@ -13,6 +13,8 @@ import { getUserStatsAction, makeMeAdminAction, getCourseContentByLanguageAction
 import { DashboardLayout } from "@/components/ui/dashboard-layout";
 import dynamic from "next/dynamic";
 import { type Step, type CallBackProps, STATUS } from 'react-joyride';
+import { OnboardingModal } from '@/components/dashboard/onboarding';
+import { CustomTooltip } from '@/components/dashboard/custom-tooltip';
 
 // Dynamic imports for code splitting
 const Joyride = dynamic(() => import('react-joyride').then((mod) => {
@@ -66,22 +68,46 @@ export default function DashboardClientPage({
     type: 'beginner'
   });
   const [isSaving, setIsSaving] = useState(false);
-  const [showOnboarding, setShowOnboarding] = useState(initialStats.xp === 0 && initialStats.completedLessons.length === 0);
   const [runTour, setRunTour] = useState(false);
+
+  useEffect(() => {
+    const hasCompletedTour = localStorage.getItem('has_completed_tour');
+    if (!hasCompletedTour) {
+      setRunTour(true);
+    }
+  }, []);
 
   const tourSteps: Step[] = [
     {
-      target: '.xp-stat',
-      content: 'This is your XP. Earn XP by completing lessons and challenges!',
+      target: '.nav-learn',
+      content: 'This is the Learn tab. Here you will find your main quest line and course modules.',
+      title: 'The Learning Path',
       disableBeacon: true,
+      placement: 'right',
     },
     {
-      target: '.streak-stat',
-      content: 'Keep your daily streak alive by coding every day!',
+      target: '.nav-lessons',
+      content: 'Access all individual lessons and challenges directly from here.',
+      title: 'Lesson Library',
+      placement: 'right',
     },
     {
-      target: '.first-lesson',
-      content: 'Click here to start your very first lesson!',
+      target: '.nav-leaderboard',
+      content: 'Compete with other coders and see your rank on the global leaderboard!',
+      title: 'Leaderboard',
+      placement: 'right',
+    },
+    {
+      target: '.nav-profile',
+      content: 'View your stats, achievements, and customize your avatar.',
+      title: 'Your Profile',
+      placement: 'right',
+    },
+    {
+      target: '.nav-playground',
+      content: 'Experiment with code freely in the interactive playground.',
+      title: 'Playground',
+      placement: 'right',
     }
   ];
 
@@ -91,6 +117,12 @@ export default function DashboardClientPage({
 
     if (finishedStatuses.includes(status)) {
       setRunTour(false);
+      localStorage.setItem('has_completed_tour', 'true');
+      import('@/lib/confetti').then((mod) => {
+        mod.triggerConfetti();
+        mod.playSuccessSound();
+      });
+      window.dispatchEvent(new CustomEvent('mascot-message', { detail: { message: "You're all set! Let the coding begin! 🎉", state: "happy" } }));
     }
   };
 
@@ -107,6 +139,20 @@ export default function DashboardClientPage({
   }, [language]);
 
   const [isFirstLoadStats, setIsFirstLoadStats] = useState(true);
+  const prevLevelRef = useRef(Math.floor(initialStats.xp / 100) + 1);
+
+  useEffect(() => {
+    const currentLevel = Math.floor(xp / 100) + 1;
+    if (currentLevel > prevLevelRef.current) {
+      import('@/lib/confetti').then((mod) => {
+        mod.playLevelUpSound();
+        mod.triggerConfetti();
+      });
+      window.dispatchEvent(new CustomEvent('mascot-message', { detail: { message: `Level Up! You are now level ${currentLevel}! 🎉`, state: "happy" } }));
+      prevLevelRef.current = currentLevel;
+    }
+  }, [xp]);
+
   useEffect(() => {
     async function fetchStats() {
       try {
@@ -115,10 +161,14 @@ export default function DashboardClientPage({
         setStreak(stats.streak);
         setRole(stats.role);
         setCompletedLessons(stats.completedLessons);
-        if (stats.xp === 0 && stats.completedLessons.length === 0) {
-          setShowOnboarding(true);
+        const newAchievements = await checkAndUnlockAchievementsAction();
+        if (newAchievements && newAchievements.length > 0) {
+          import('@/lib/confetti').then((mod) => {
+            mod.playAchievementSound();
+            mod.triggerConfetti();
+          });
+          window.dispatchEvent(new CustomEvent('mascot-message', { detail: { message: `Achievement Unlocked: ${newAchievements[0].name}! 🏆`, state: "happy" } }));
         }
-        await checkAndUnlockAchievementsAction();
         const userRank = await getUserRankAction();
         setRank(userRank);
 
@@ -245,9 +295,9 @@ export default function DashboardClientPage({
 
   if (isPending || !session) {
     return (
-      <div className="min-h-screen bg-[#1a1a1a] flex flex-col items-center justify-center gap-6">
-        <LumaSpin />
-        <div className="text-white font-pixel text-xs animate-pulse">LOADING QUEST DATA...</div>
+      <div className="min-h-screen bg-[#0f0f0f] flex flex-col items-center justify-center gap-6">
+        <div className="w-16 h-16 border-4 border-[#333] border-t-[#39ff14] rounded-full animate-spin" />
+        <div className="text-[#39ff14] font-pixel text-xs animate-pulse tracking-widest">LOADING QUEST DATA...</div>
       </div>
     );
   }
@@ -274,60 +324,15 @@ export default function DashboardClientPage({
         steps={tourSteps}
         run={runTour}
         continuous={true}
-        showProgress={true}
         showSkipButton={true}
         callback={handleJoyrideCallback}
+        tooltipComponent={CustomTooltip}
         styles={{
           options: {
-            primaryColor: '#39ff14',
-            backgroundColor: '#1a1a1a',
-            textColor: '#fff',
-            arrowColor: '#1a1a1a',
+            zIndex: 10000,
           },
-          tooltipContainer: {
-            fontFamily: 'var(--font-pixel)',
-            fontSize: '12px',
-          },
-          buttonNext: {
-            fontFamily: 'var(--font-pixel)',
-            fontSize: '10px',
-            color: '#000',
-          },
-          buttonBack: {
-            fontFamily: 'var(--font-pixel)',
-            fontSize: '10px',
-            color: '#fff',
-          },
-          buttonSkip: {
-            fontFamily: 'var(--font-pixel)',
-            fontSize: '10px',
-            color: '#888',
-          }
         }}
       />
-      {/* Onboarding Modal */}
-      {showOnboarding && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.8, y: 50 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            className="bg-[#1a1a1a] border-4 border-[#39ff14] rounded-xl w-full max-w-lg p-8 shadow-[0_0_100px_rgba(57,255,20,0.2)] text-center relative overflow-hidden"
-          >
-            <Trophy className="w-24 h-24 text-yellow-400 mx-auto mb-6" />
-            <h2 className="font-pixel text-3xl text-white mb-4">WELCOME TO <span className="text-[#39ff14]">THE QUEST</span></h2>
-            <p className="font-pixel text-[10px] text-[#aaa] mb-8">YOUR JOURNEY TO BECOMING A MASTER CODER BEGINS HERE.</p>
-            <button 
-              onClick={() => {
-                setShowOnboarding(false);
-                setRunTour(true);
-              }}
-              className="w-full bg-[#39ff14] text-black font-pixel text-sm py-4 rounded-lg hover:bg-white transition-colors"
-            >
-              START MY JOURNEY
-            </button>
-          </motion.div>
-        </div>
-      )}
 
       <AdminEditor 
         isEditorOpen={isEditorOpen}
@@ -388,7 +393,9 @@ export default function DashboardClientPage({
           </div>
 
           {isLoadingCourse ? (
-            <div className="flex justify-center py-12"><LumaSpin /></div>
+            <div className="flex justify-center py-12">
+              <div className="w-12 h-12 border-4 border-[#333] border-t-[#39ff14] rounded-full animate-spin" />
+            </div>
           ) : (
             <LearningPath 
               courseData={courseData}

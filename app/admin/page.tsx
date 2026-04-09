@@ -4,7 +4,6 @@ import React, { useEffect, useState } from "react";
 import { authClient } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
 import { getUserStatsAction, getUsersAction, createSectionAction, createChapterAction, createLessonAction, importNestedCourseAction, getAchievementsAction, createAchievementAction, deleteAchievementAction, deleteAllCoursesAction, getLlmsTxtAction, updateLlmsTxtAction } from "@/app/actions";
-import { Component as LumaSpin } from "@/components/ui/luma-spin";
 import { ArrowLeft, Users, BookOpen, Plus, Settings, Save, Trash2, FileText } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
@@ -269,9 +268,9 @@ export default function AdminPage() {
 
   if (isPending || isAdmin === null) {
     return (
-      <div className="min-h-screen bg-[#1a1a1a] flex flex-col items-center justify-center gap-6">
-        <LumaSpin />
-        <div className="text-white font-pixel text-xs animate-pulse">VERIFYING CLEARANCE...</div>
+      <div className="min-h-screen bg-[#0f0f0f] flex flex-col items-center justify-center gap-6">
+        <div className="w-16 h-16 border-4 border-[#333] border-t-[#39ff14] rounded-full animate-spin" />
+        <div className="text-[#39ff14] font-pixel text-xs animate-pulse tracking-widest">VERIFYING CLEARANCE...</div>
       </div>
     );
   }

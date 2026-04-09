@@ -18,6 +18,16 @@ export default function Home() {
 
   useEffect(() => {
     const ctx = gsap.context(() => {
+      // Hero text animation
+      gsap.from(".hero-text", {
+        y: 30,
+        opacity: 0,
+        duration: 0.8,
+        stagger: 0.15,
+        ease: "power3.out",
+        delay: 0.2
+      });
+
       // Scroll Reveals for sections
       gsap.from(".reveal-up", {
         scrollTrigger: {

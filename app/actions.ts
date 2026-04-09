@@ -421,6 +421,28 @@ export async function getUserRankAction() {
   return rank;
 }
 
+export async function getLeaderboardAction() {
+  const users = await db.query.user.findMany({
+    orderBy: (users, { desc }) => [desc(users.xp)],
+    limit: 10,
+    columns: {
+      id: true,
+      name: true,
+      xp: true,
+      image: true,
+    }
+  });
+
+  return users.map((u, index) => ({
+    id: u.id,
+    name: u.name,
+    xp: u.xp,
+    level: Math.floor(Math.sqrt(u.xp / 100)) + 1,
+    rank: index + 1,
+    avatar: u.image || `https://api.dicebear.com/7.x/pixel-art/svg?seed=${u.name}`
+  }));
+}
+
 export async function getUsersAction() {
   const session = await auth.api.getSession({
     headers: await headers()

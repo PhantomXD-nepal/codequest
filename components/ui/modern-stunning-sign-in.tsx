@@ -149,7 +149,7 @@ const SignIn1 = () => {
 
           <div className="w-full text-center mt-8">
             <span className="text-sm text-white/50">
-              Don't have an account?{" "}
+              Don&apos;t have an account?{" "}
               <Link
                 href="/signup"
                 className="text-white font-medium hover:text-[#5ed29c] transition-colors"

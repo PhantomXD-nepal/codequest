@@ -3,31 +3,35 @@
 import { DashboardLayout } from "@/components/ui/dashboard-layout";
 import { Trophy, Medal, Crown, Star, Zap, Target } from "lucide-react";
 import { motion } from "framer-motion";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import Image from "next/image";
+import { getLeaderboardAction } from "@/app/actions";
 
 gsap.registerPlugin(ScrollTrigger);
 
-const leaderboardData = [
-  { id: 1, name: "PixelMaster", xp: 15420, level: 42, rank: 1, avatar: "https://api.dicebear.com/7.x/pixel-art/svg?seed=PixelMaster" },
-  { id: 2, name: "CodeNinja", xp: 14200, level: 38, rank: 2, avatar: "https://api.dicebear.com/7.x/pixel-art/svg?seed=CodeNinja" },
-  { id: 3, name: "BitWizard", xp: 12850, level: 35, rank: 3, avatar: "https://api.dicebear.com/7.x/pixel-art/svg?seed=BitWizard" },
-  { id: 4, name: "LogicKnight", xp: 11200, level: 31, rank: 4, avatar: "https://api.dicebear.com/7.x/pixel-art/svg?seed=LogicKnight" },
-  { id: 5, name: "SyntaxSlayer", xp: 9800, level: 28, rank: 5, avatar: "https://api.dicebear.com/7.x/pixel-art/svg?seed=SyntaxSlayer" },
-  { id: 6, name: "DataDragon", xp: 8500, level: 25, rank: 6, avatar: "https://api.dicebear.com/7.x/pixel-art/svg?seed=DataDragon" },
-  { id: 7, name: "VoidWalker", xp: 7200, level: 22, rank: 7, avatar: "https://api.dicebear.com/7.x/pixel-art/svg?seed=VoidWalker" },
-  { id: 8, name: "CyberGhost", xp: 6400, level: 19, rank: 8, avatar: "https://api.dicebear.com/7.x/pixel-art/svg?seed=CyberGhost" },
-  { id: 9, name: "RustRanger", xp: 5100, level: 16, rank: 9, avatar: "https://api.dicebear.com/7.x/pixel-art/svg?seed=RustRanger" },
-  { id: 10, name: "GoGuru", xp: 4200, level: 14, rank: 10, avatar: "https://api.dicebear.com/7.x/pixel-art/svg?seed=GoGuru" },
-];
-
 export default function LeaderboardPage() {
   const containerRef = useRef<HTMLDivElement>(null);
+  const [leaderboardData, setLeaderboardData] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (containerRef.current) {
+    async function fetchLeaderboard() {
+      try {
+        const data = await getLeaderboardAction();
+        setLeaderboardData(data);
+      } catch (err) {
+        console.error("Failed to fetch leaderboard:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    fetchLeaderboard();
+  }, []);
+
+  useEffect(() => {
+    if (containerRef.current && !isLoading) {
       const ctx = gsap.context(() => {
         const rows = containerRef.current?.querySelectorAll(".leaderboard-row");
         if (rows && rows.length > 0) {
@@ -50,7 +54,18 @@ export default function LeaderboardPage() {
       }, containerRef);
       return () => ctx.revert();
     }
-  }, []);
+  }, [isLoading]);
+
+  if (isLoading) {
+    return (
+      <DashboardLayout>
+        <div className="min-h-screen bg-[#0f0f0f] flex flex-col items-center justify-center gap-6">
+          <div className="w-16 h-16 border-4 border-[#333] border-t-[#39ff14] rounded-full animate-spin" />
+          <div className="text-[#39ff14] font-pixel text-xs animate-pulse tracking-widest">LOADING LEGENDS...</div>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
