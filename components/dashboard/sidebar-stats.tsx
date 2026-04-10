@@ -36,9 +36,11 @@ export default function SidebarStats({
         <div className="flex items-center gap-4 mb-6">
           <div className="w-12 h-12 bg-[#39ff14] border-2 border-[#000] rounded-lg flex items-center justify-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] overflow-hidden relative">
             {session?.user?.image ? (
-              <img 
+              <Image 
                 src={session.user.image} 
                 alt={userName} 
+                width={48} 
+                height={48}
                 className="w-full h-full object-cover" 
                 referrerPolicy="no-referrer" 
               />

@@ -78,7 +78,7 @@ export default function DashboardClientPage({
       target: '.nav-learn',
       content: 'This is the Learn tab. Here you will find your main quest line and course modules.',
       title: 'The Learning Path',
-      disableBeacon: true,
+      skipBeacon: true,
       placement: 'right',
     },
     {
@@ -134,7 +134,7 @@ export default function DashboardClientPage({
     }
   }, [language]);
 
-  const [isFirstLoadStats, setIsFirstLoadStats] = useState(true);
+  const isFirstLoadStats = useRef(true);
   const prevLevelRef = useRef(Math.floor(initialStats.xp / 100) + 1);
 
   useEffect(() => {
@@ -163,7 +163,7 @@ export default function DashboardClientPage({
             mod.playAchievementSound();
             mod.triggerConfetti();
           });
-          window.dispatchEvent(new CustomEvent('mascot-message', { detail: { message: `Achievement Unlocked: ${newAchievements[0].name}! 🏆`, state: "happy" } }));
+          window.dispatchEvent(new CustomEvent('mascot-message', { detail: { message: `Achievement Unlocked: ${newAchievements[0].title}! 🏆`, state: "happy" } }));
         }
         const userRank = await getUserRankAction();
         setRank(userRank);
@@ -176,19 +176,19 @@ export default function DashboardClientPage({
     }
 
     if (session) {
-      if (isFirstLoadStats) {
-        setIsFirstLoadStats(false);
+      if (isFirstLoadStats.current) {
+        isFirstLoadStats.current = false;
         return;
       }
       fetchStats();
     }
   }, [session]);
 
-  const [isFirstLoadCourse, setIsFirstLoadCourse] = useState(true);
+  const isFirstLoadCourse = useRef(true);
   useEffect(() => {
     if (session) {
-      if (isFirstLoadCourse) {
-        setIsFirstLoadCourse(false);
+      if (isFirstLoadCourse.current) {
+        isFirstLoadCourse.current = false;
         return;
       }
       fetchCourse();
@@ -320,14 +320,12 @@ export default function DashboardClientPage({
         steps={tourSteps}
         run={runTour}
         continuous={true}
-        showSkipButton={true}
+        options={{
+          zIndex: 10000,
+          buttons: ['back', 'close', 'primary', 'skip'],
+        }}
         onEvent={handleJoyrideCallback}
         tooltipComponent={CustomTooltip}
-        styles={{
-          options: {
-            zIndex: 10000,
-          },
-        }}
       />
 
       <AdminEditor 

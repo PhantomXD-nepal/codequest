@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
+import Image from 'next/image';
 import { Owl } from '@/components/ui/owl';
 
 export function OnboardingModal({ onComplete }: { onComplete: () => void }) {
@@ -106,7 +107,7 @@ export function OnboardingModal({ onComplete }: { onComplete: () => void }) {
                         onClick={() => setAvatar(av)}
                         className={`aspect-square rounded-lg border-2 overflow-hidden transition-all ${avatar === av ? 'border-[#39ff14] scale-105' : 'border-[#333] hover:border-[#39ff14]/50'}`}
                       >
-                        <img src={av} alt="Avatar" className="w-full h-full object-cover" />
+                        <Image src={av} alt="Avatar" width={64} height={64} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                       </button>
                     ))}
                   </div>

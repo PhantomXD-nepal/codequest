@@ -83,7 +83,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           <div className="flex items-center gap-4 mb-4">
             <div className="w-12 h-12 bg-[#333] border-2 border-black rounded-lg flex items-center justify-center overflow-hidden relative shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
               {session?.user?.image ? (
-                <img src={session.user.image} alt="Avatar" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                <Image src={session.user.image} alt="Avatar" width={48} height={48} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
               ) : (
                 <User className="text-[#555]" />
               )}
