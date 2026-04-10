@@ -17,11 +17,7 @@ import { OnboardingModal } from '@/components/dashboard/onboarding';
 import { CustomTooltip } from '@/components/dashboard/custom-tooltip';
 
 // Dynamic imports for code splitting
-const Joyride = dynamic(() => import('react-joyride').then((mod) => {
-  // Ensure we get the actual component function
-  const Component = mod.default || (mod as any).Joyride || mod;
-  return Component;
-}), { ssr: false });
+const Joyride = dynamic(() => import('react-joyride').then((mod) => mod.Joyride), { ssr: false });
 const LanguageSelect = dynamic(() => import("@/components/dashboard/language-select"), { ssr: false });
 const AdminEditor = dynamic(() => import("@/components/dashboard/admin-editor"), { ssr: false });
 const LearningPath = dynamic(() => import("@/components/dashboard/learning-path"), { ssr: false });
