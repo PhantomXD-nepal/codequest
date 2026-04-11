@@ -15,6 +15,34 @@
       "when": 1774686442682,
       "tag": "0001_deep_kulan_gath",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1774686442682,
+      "tag": "0002_add_video_url_language",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1774686442682,
+      "tag": "0003_move_video_url_language",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1774686442682,
+      "tag": "0004_fix_section_schema",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1774686442682,
+      "tag": "0005_add_language_table",
+      "breakpoints": true
     }
   ]
 }

@@ -4,9 +4,8 @@ import { useState, useEffect } from "react";
 import { DashboardLayout } from "@/components/ui/dashboard-layout";
 import { LANGUAGES } from "@/lib/constants";
 import { getCoursesByLanguageAction } from "@/app/actions";
-import { Code2, Layout, Terminal, FileType2, FileJson, ArrowRight, BookOpen } from "lucide-react";
+import { Code2, Layout, Terminal, FileType2, FileJson, BookOpen } from "lucide-react";
 import Link from "next/link";
-import { motion } from "motion/react";
 
 const categoryIcons: Record<string, React.ReactElement> = {
   html: <Layout className="w-6 h-6" />,
@@ -17,7 +16,7 @@ const categoryIcons: Record<string, React.ReactElement> = {
   cpp: <Terminal className="w-6 h-6" />,
 };
 
-export default function LessonsPage() {
+export default function CoursesPage() {
   const [selectedLanguage, setSelectedLanguage] = useState<string | null>(null);
   const [courses, setCourses] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -76,7 +75,12 @@ export default function LessonsPage() {
               <div key={course.id} className="bg-[#1e1e1e] border-4 border-[#000] p-6 rounded-xl">
                 <h2 className="text-xl font-pixel text-white mb-3 uppercase">{course.title}</h2>
                 <p className="text-[#888] font-mono text-sm mb-8">{course.description}</p>
-                <Link href={`/lessons/${course.id}`} className="mc-button mc-button-green w-full py-3 flex items-center justify-center gap-2 font-pixel text-[12px] text-white">
+                {course.videoUrl && (
+                    <div className="mb-4">
+                        <a href={course.videoUrl} target="_blank" rel="noreferrer" className="text-[#39ff14] text-xs font-pixel">Watch Intro</a>
+                    </div>
+                )}
+                <Link href={`/courses/${course.id}`} className="mc-button mc-button-green w-full py-3 flex items-center justify-center gap-2 font-pixel text-[12px] text-white">
                   START COURSE
                 </Link>
               </div>

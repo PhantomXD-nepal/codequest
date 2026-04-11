@@ -40,18 +40,6 @@ export default function Home() {
         stagger: 0.2,
         ease: "power3.out"
       });
-
-      gsap.from(".feature-card", {
-        scrollTrigger: {
-          trigger: "#features",
-          start: "top 90%",
-        },
-        y: 30,
-        opacity: 0,
-        duration: 0.5,
-        stagger: 0.1,
-        ease: "power2.out"
-      });
     }, pageRef.current || undefined);
 
     return () => ctx.revert();
@@ -65,7 +53,7 @@ export default function Home() {
         <Hero />
 
         {/* Features Section - High End Redesign */}
-        <section id="features" ref={featuresRef} className="py-32 relative overflow-hidden border-t border-white/5">
+        <section id="features" ref={featuresRef} className="py-32 relative border-t border-white/5">
           <div className="container mx-auto px-6">
             <div className="max-w-3xl mb-24 reveal-up">
               <span className="text-[#5ed29c] font-plus-jakarta font-bold text-[11px] uppercase tracking-[0.2em] mb-4 block">

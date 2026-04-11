@@ -3,17 +3,27 @@
 import React, { useEffect, useState } from "react";
 import { authClient } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
-import { getUserStatsAction, getUsersAction, createSectionAction, createChapterAction, createLessonAction, importNestedCourseAction, getAchievementsAction, createAchievementAction, deleteAchievementAction, deleteAllCoursesAction, getLlmsTxtAction, updateLlmsTxtAction } from "@/app/actions";
-import { ArrowLeft, Users, BookOpen, Plus, Settings, Save, Trash2, FileText } from "lucide-react";
+import { getUserStatsAction, getUsersAction, createSectionAction, createChapterAction, createLessonAction, createCourseAction, createLanguageAction, getLanguagesAction, importNestedCourseAction, getAchievementsAction, createAchievementAction, deleteAchievementAction, deleteAllCoursesAction, getLlmsTxtAction, updateLlmsTxtAction, getAllCoursesAction, deleteCourseAction, deleteSectionAction, deleteChapterAction, deleteLessonAction, updateCourseAction, updateSectionAction, updateChapterAction, updateLessonAction } from "@/app/actions";
+import { ArrowLeft, Users, BookOpen, Plus, Settings, Save, Trash2, FileText, Edit, Search, ChevronDown, ChevronUp } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
+
+import { LessonEditorTab } from "@/components/admin/lesson-editor-tab";
 
 export default function AdminPage() {
   const { data: session, isPending } = authClient.useSession();
   const router = useRouter();
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
   const [users, setUsers] = useState<any[]>([]);
-  const [activeTab, setActiveTab] = useState<'users' | 'content' | 'achievements' | 'llms'>('users');
+  const [courses, setCourses] = useState<any[]>([]);
+  const [activeTab, setActiveTab] = useState<'users' | 'content' | 'achievements' | 'llms' | 'courses'>('users');
+  const [contentSubTab, setContentSubTab] = useState<'courses' | 'sections' | 'chapters' | 'lessons'>('courses');
+  const [languages, setLanguages] = useState<any[]>([]);
+  const [allSections, setAllSections] = useState<any[]>([]);
+  const [allChapters, setAllChapters] = useState<any[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' }>({ key: 'title', direction: 'asc' });
+  const [editingItem, setEditingItem] = useState<{ type: 'course' | 'section' | 'chapter' | 'lesson'; id: string; data: any } | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   // LLMS.txt State
@@ -30,9 +40,10 @@ export default function AdminPage() {
   });
   
   // Content Form States
-  const [contentType, setContentType] = useState<'section' | 'chapter' | 'lesson'>('section');
+  const [contentType, setContentType] = useState<'section' | 'chapter' | 'lesson' | 'course' | 'language'>('section');
   const [formData, setFormData] = useState({
     title: '',
+    name: '',
     description: '',
     content: '',
     challenge: '',
@@ -42,7 +53,10 @@ export default function AdminPage() {
     type: 'beginner',
     sectionId: '',
     chapterId: '',
-    language: 'python'
+    courseId: '',
+    language: 'python',
+    languageId: '',
+    videoUrl: ''
   });
 
   useEffect(() => {
@@ -77,6 +91,33 @@ export default function AdminPage() {
         setLlmsContent(content);
       };
       fetchLlms();
+    } else if (activeTab === 'courses') {
+      const fetchCourses = async () => {
+        const coursesList = await getAllCoursesAction();
+        setCourses(coursesList);
+      };
+      fetchCourses();
+    } else if (activeTab === 'content') {
+      const fetchData = async () => {
+        const langs = await getLanguagesAction();
+        setLanguages(langs);
+        const allData = await getAllCoursesAction();
+        setCourses(allData);
+        
+        const sections: any[] = [];
+        const chapters: any[] = [];
+        allData.forEach((c: any) => {
+          c.sections?.forEach((s: any) => {
+            sections.push({ ...s, courseTitle: c.title });
+            s.chapters?.forEach((ch: any) => {
+              chapters.push({ ...ch, sectionTitle: s.title });
+            });
+          });
+        });
+        setAllSections(sections);
+        setAllChapters(chapters);
+      };
+      fetchData();
     }
   }, [activeTab]);
 
@@ -88,6 +129,8 @@ export default function AdminPage() {
         await createSectionAction({
           title: formData.title,
           language: formData.language,
+          courseId: formData.courseId,
+          languageId: formData.languageId,
         });
       } else if (contentType === 'chapter') {
         await createChapterAction({
@@ -106,10 +149,25 @@ export default function AdminPage() {
           type: formData.type,
           chapterId: formData.chapterId,
         });
+      } else if (contentType === 'course') {
+        await createCourseAction({
+          title: formData.title,
+          description: formData.description,
+          languageId: formData.languageId,
+          videoUrl: formData.videoUrl,
+          language: formData.language,
+        });
+      } else if (contentType === 'language') {
+        await createLanguageAction({
+          name: formData.name,
+          title: formData.title,
+          description: formData.description,
+        });
       }
       alert(`${contentType.toUpperCase()} created successfully!`);
       setFormData({
         title: '',
+        name: '',
         description: '',
         content: '',
         challenge: '',
@@ -119,7 +177,10 @@ export default function AdminPage() {
         type: 'beginner',
         sectionId: '',
         chapterId: '',
-        language: 'python'
+        courseId: '',
+        language: 'python',
+        languageId: '',
+        videoUrl: ''
       });
     } catch (err) {
       console.error("Failed to create content:", err);
@@ -253,6 +314,96 @@ export default function AdminPage() {
     }
   };
 
+  const handleDeleteCourse = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this course?')) return;
+    setIsSubmitting(true);
+    try {
+      await deleteCourseAction(id);
+      const coursesList = await getAllCoursesAction();
+      setCourses(coursesList);
+      alert('Course deleted successfully!');
+    } catch (err) {
+      console.error("Failed to delete course:", err);
+      alert("Failed to delete course. Check console for details.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDeleteSection = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this section?')) return;
+    setIsSubmitting(true);
+    try {
+      await deleteSectionAction(id);
+      const coursesList = await getAllCoursesAction();
+      setCourses(coursesList);
+      alert('Section deleted successfully!');
+    } catch (err) {
+      console.error("Failed to delete section:", err);
+      alert("Failed to delete section.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDeleteChapter = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this chapter?')) return;
+    setIsSubmitting(true);
+    try {
+      await deleteChapterAction(id);
+      const coursesList = await getAllCoursesAction();
+      setCourses(coursesList);
+      alert('Chapter deleted successfully!');
+    } catch (err) {
+      console.error("Failed to delete chapter:", err);
+      alert("Failed to delete chapter.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDeleteLesson = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this lesson?')) return;
+    setIsSubmitting(true);
+    try {
+      await deleteLessonAction(id);
+      const coursesList = await getAllCoursesAction();
+      setCourses(coursesList);
+      alert('Lesson deleted successfully!');
+    } catch (err) {
+      console.error("Failed to delete lesson:", err);
+      alert("Failed to delete lesson.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleUpdateItem = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingItem) return;
+    setIsSubmitting(true);
+    try {
+      if (editingItem.type === 'course') {
+        await updateCourseAction(editingItem.id, editingItem.data);
+      } else if (editingItem.type === 'section') {
+        await updateSectionAction(editingItem.id, editingItem.data);
+      } else if (editingItem.type === 'chapter') {
+        await updateChapterAction(editingItem.id, { title: editingItem.data.title });
+      } else if (editingItem.type === 'lesson') {
+        await updateLessonAction(editingItem.id, editingItem.data);
+      }
+      alert(`${editingItem.type.toUpperCase()} updated successfully!`);
+      setEditingItem(null);
+      const coursesList = await getAllCoursesAction();
+      setCourses(coursesList);
+    } catch (err) {
+      console.error("Failed to update item:", err);
+      alert("Failed to update item.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const handleUpdateLlms = async () => {
     setIsSubmitting(true);
     try {
@@ -264,6 +415,64 @@ export default function AdminPage() {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const getSections = () => {
+    return courses.flatMap(c => c.sections.map((s: any) => ({ ...s, courseTitle: c.title })));
+  };
+
+  const getChapters = () => {
+    return courses.flatMap(c => 
+      c.sections.flatMap((s: any) => 
+        s.chapters.map((ch: any) => ({ ...ch, sectionTitle: s.title, courseTitle: c.title }))
+      )
+    );
+  };
+
+  const getLessons = () => {
+    return courses.flatMap(c => 
+      c.sections.flatMap((s: any) => 
+        s.chapters.flatMap((ch: any) => 
+          ch.lessons.map((l: any) => ({ ...l, chapterTitle: ch.title, sectionTitle: s.title, courseTitle: c.title }))
+        )
+      )
+    );
+  };
+
+  const getFilteredAndSortedData = () => {
+    let data: any[] = [];
+    if (contentSubTab === 'courses') data = courses;
+    else if (contentSubTab === 'sections') data = getSections();
+    else if (contentSubTab === 'chapters') data = getChapters();
+    else if (contentSubTab === 'lessons') data = getLessons();
+
+    // Filter
+    if (searchQuery) {
+      data = data.filter(item => 
+        item.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item.id?.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
+
+    // Sort
+    data.sort((a, b) => {
+      const valA = a[sortConfig.key];
+      const valB = b[sortConfig.key];
+      if (valA < valB) return sortConfig.direction === 'asc' ? -1 : 1;
+      if (valA > valB) return sortConfig.direction === 'asc' ? 1 : -1;
+      return 0;
+    });
+
+    return data;
+  };
+
+  const requestSort = (key: string) => {
+    let direction: 'asc' | 'desc' = 'asc';
+    if (sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
   };
 
   if (isPending || isAdmin === null) {
@@ -335,6 +544,15 @@ export default function AdminPage() {
           >
             <FileText className="w-4 h-4" />
             LLMS.TXT
+          </button>
+          <button 
+            onClick={() => setActiveTab('courses')}
+            className={`flex items-center gap-2 font-pixel text-xs px-4 py-2 rounded-lg transition-colors ${
+              activeTab === 'courses' ? 'bg-[#39ff14] text-black' : 'text-[#888] hover:bg-[#252525] hover:text-white'
+            }`}
+          >
+            <BookOpen className="w-4 h-4" />
+            COURSES
           </button>
         </div>
 
@@ -445,6 +663,18 @@ export default function AdminPage() {
                   >
                     ADD LESSON
                   </button>
+                  <button 
+                    onClick={() => setContentType('course')}
+                    className={`font-pixel text-[10px] px-4 py-2 rounded border border-[#333] transition-colors ${contentType === 'course' ? 'bg-[#39ff14] text-black' : 'bg-[#252525] text-white hover:bg-[#333]'}`}
+                  >
+                    ADD COURSE
+                  </button>
+                  <button 
+                    onClick={() => setContentType('language')}
+                    className={`font-pixel text-[10px] px-4 py-2 rounded border border-[#333] transition-colors ${contentType === 'language' ? 'bg-[#39ff14] text-black' : 'bg-[#252525] text-white hover:bg-[#333]'}`}
+                  >
+                    ADD LANGUAGE
+                  </button>
                   <div className="w-[1px] h-8 bg-[#333] mx-2" />
                   <Link 
                     href="/admin/courses"
@@ -484,31 +714,116 @@ export default function AdminPage() {
                   />
                 </div>
 
+                {contentType === 'language' && (
+                  <>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-pixel text-[#888]">NAME (ID)</label>
+                      <input 
+                        type="text" 
+                        value={formData.name}
+                        onChange={(e) => setFormData({...formData, name: e.target.value})}
+                        className="w-full bg-[#0d0d0d] border border-[#333] rounded-lg p-3 text-white font-sans focus:outline-none focus:border-[#39ff14]"
+                        placeholder="e.g., python, javascript"
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-pixel text-[#888]">DESCRIPTION</label>
+                      <input 
+                        type="text" 
+                        value={formData.description}
+                        onChange={(e) => setFormData({...formData, description: e.target.value})}
+                        className="w-full bg-[#0d0d0d] border border-[#333] rounded-lg p-3 text-white font-sans focus:outline-none focus:border-[#39ff14]"
+                        placeholder="Language description..."
+                        required
+                      />
+                    </div>
+                  </>
+                )}
+
                 {contentType === 'section' && (
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-pixel text-[#888]">LANGUAGE</label>
-                    <input 
-                      type="text" 
-                      value={formData.language}
-                      onChange={(e) => setFormData({...formData, language: e.target.value})}
-                      className="w-full bg-[#0d0d0d] border border-[#333] rounded-lg p-3 text-white font-sans focus:outline-none focus:border-[#39ff14]"
-                      placeholder="e.g., python, javascript"
-                      required
-                    />
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-pixel text-[#888]">COURSE</label>
+                      <select 
+                        value={formData.courseId}
+                        onChange={(e) => setFormData({...formData, courseId: e.target.value})}
+                        className="w-full bg-[#0d0d0d] border border-[#333] rounded-lg p-3 text-white font-sans focus:outline-none focus:border-[#39ff14]"
+                        required
+                      >
+                        <option value="">Select Course...</option>
+                        {courses.map(c => (
+                          <option key={c.id} value={c.id}>{c.title}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-pixel text-[#888]">LANGUAGE (LEGACY)</label>
+                      <input 
+                        type="text" 
+                        value={formData.language}
+                        onChange={(e) => setFormData({...formData, language: e.target.value})}
+                        className="w-full bg-[#0d0d0d] border border-[#333] rounded-lg p-3 text-white font-sans focus:outline-none focus:border-[#39ff14]"
+                        placeholder="e.g., python, javascript"
+                      />
+                    </div>
                   </div>
+                )}
+
+                {contentType === 'course' && (
+                  <>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-pixel text-[#888]">DESCRIPTION</label>
+                      <input 
+                        type="text" 
+                        value={formData.description}
+                        onChange={(e) => setFormData({...formData, description: e.target.value})}
+                        className="w-full bg-[#0d0d0d] border border-[#333] rounded-lg p-3 text-white font-sans focus:outline-none focus:border-[#39ff14]"
+                        placeholder="Course description..."
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-pixel text-[#888]">LANGUAGE</label>
+                      <select 
+                        value={formData.languageId}
+                        onChange={(e) => setFormData({...formData, languageId: e.target.value})}
+                        className="w-full bg-[#0d0d0d] border border-[#333] rounded-lg p-3 text-white font-sans focus:outline-none focus:border-[#39ff14]"
+                        required
+                      >
+                        <option value="">Select Language...</option>
+                        {languages.map(l => (
+                          <option key={l.id} value={l.id}>{l.title} ({l.name})</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-pixel text-[#888]">VIDEO URL</label>
+                      <input 
+                        type="text" 
+                        value={formData.videoUrl}
+                        onChange={(e) => setFormData({...formData, videoUrl: e.target.value})}
+                        className="w-full bg-[#0d0d0d] border border-[#333] rounded-lg p-3 text-white font-sans focus:outline-none focus:border-[#39ff14]"
+                        placeholder="Video URL..."
+                      />
+                    </div>
+                  </>
                 )}
 
                 {contentType === 'chapter' && (
                   <div className="space-y-2">
-                    <label className="text-[10px] font-pixel text-[#888]">SECTION ID</label>
-                    <input 
-                      type="text" 
+                    <label className="text-[10px] font-pixel text-[#888]">SECTION</label>
+                    <select 
                       value={formData.sectionId}
                       onChange={(e) => setFormData({...formData, sectionId: e.target.value})}
                       className="w-full bg-[#0d0d0d] border border-[#333] rounded-lg p-3 text-white font-sans focus:outline-none focus:border-[#39ff14]"
-                      placeholder="Enter parent section ID..."
                       required
-                    />
+                    >
+                      <option value="">Select Section...</option>
+                      {allSections.map(s => (
+                        <option key={s.id} value={s.id}>{s.courseTitle} - {s.title}</option>
+                      ))}
+                    </select>
                   </div>
                 )}
 
@@ -516,15 +831,18 @@ export default function AdminPage() {
                   <>
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <label className="text-[10px] font-pixel text-[#888]">CHAPTER ID</label>
-                        <input 
-                          type="text" 
+                        <label className="text-[10px] font-pixel text-[#888]">CHAPTER</label>
+                        <select 
                           value={formData.chapterId}
                           onChange={(e) => setFormData({...formData, chapterId: e.target.value})}
                           className="w-full bg-[#0d0d0d] border border-[#333] rounded-lg p-3 text-white font-sans focus:outline-none focus:border-[#39ff14]"
-                          placeholder="Enter parent chapter ID..."
                           required
-                        />
+                        >
+                          <option value="">Select Chapter...</option>
+                          {allChapters.map(ch => (
+                            <option key={ch.id} value={ch.id}>{ch.sectionTitle} - {ch.title}</option>
+                          ))}
+                        </select>
                       </div>
                       <div className="space-y-2">
                         <label className="text-[10px] font-pixel text-[#888]">DIFFICULTY</label>
@@ -744,6 +1062,254 @@ export default function AdminPage() {
                 )}
               </div>
             </div>
+          </div>
+        )}
+
+        {/* Courses Tab */}
+        {activeTab === 'courses' && (
+          <div className="space-y-6">
+            <div className="bg-[#1e1e1e] border-4 border-[#000] p-6 rounded-xl shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                <div className="flex items-center gap-4">
+                  <h2 className="text-sm font-pixel text-[#39ff14]">COURSE MANAGER</h2>
+                  <button 
+                    onClick={() => {
+                      setActiveTab('content');
+                      setContentType('course');
+                    }}
+                    className="flex items-center gap-2 bg-[#39ff14] text-black font-pixel text-[10px] px-4 py-2 rounded-lg hover:bg-[#32e012] transition-colors shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] border-2 border-black"
+                  >
+                    <Plus className="w-4 h-4" />
+                    ADD NEW COURSE
+                  </button>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {(['courses', 'sections', 'chapters', 'lessons'] as const).map((tab) => (
+                    <button
+                      key={tab}
+                      onClick={() => {
+                        setContentSubTab(tab);
+                        setSearchQuery('');
+                        setSortConfig({ key: 'title', direction: 'asc' });
+                      }}
+                      className={`font-pixel text-[10px] px-4 py-2 rounded border border-[#333] transition-colors ${contentSubTab === tab ? 'bg-[#39ff14] text-black' : 'bg-[#252525] text-white hover:bg-[#333]'}`}
+                    >
+                      {tab.toUpperCase()}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex items-center gap-4 mb-6 bg-[#0d0d0d] border border-[#333] rounded-lg p-2">
+                <Search className="w-4 h-4 text-[#888] ml-2" />
+                <input
+                  type="text"
+                  placeholder={`Search ${contentSubTab}...`}
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="bg-transparent border-none focus:outline-none text-white font-sans text-sm w-full"
+                />
+              </div>
+
+              <div className="overflow-x-auto custom-scrollbar">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="border-b border-[#333]">
+                      <th 
+                        className="p-4 font-pixel text-[10px] text-[#888] cursor-pointer hover:text-white"
+                        onClick={() => requestSort('title')}
+                      >
+                        <div className="flex items-center gap-2">
+                          TITLE
+                          {sortConfig.key === 'title' && (sortConfig.direction === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />)}
+                        </div>
+                      </th>
+                      {contentSubTab === 'courses' && (
+                        <th className="p-4 font-pixel text-[10px] text-[#888]">LANG ID</th>
+                      )}
+                      {contentSubTab === 'sections' && (
+                        <th className="p-4 font-pixel text-[10px] text-[#888]">COURSE</th>
+                      )}
+                      {contentSubTab === 'chapters' && (
+                        <th className="p-4 font-pixel text-[10px] text-[#888]">SECTION</th>
+                      )}
+                      {contentSubTab === 'lessons' && (
+                        <th className="p-4 font-pixel text-[10px] text-[#888]">CHAPTER</th>
+                      )}
+                      <th 
+                        className="p-4 font-pixel text-[10px] text-[#888] cursor-pointer hover:text-white"
+                        onClick={() => requestSort('order')}
+                      >
+                        <div className="flex items-center gap-2">
+                          ORDER
+                          {sortConfig.key === 'order' && (sortConfig.direction === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />)}
+                        </div>
+                      </th>
+                      <th className="p-4 font-pixel text-[10px] text-[#888] text-right">ACTIONS</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {getFilteredAndSortedData().map((item: any) => (
+                      <tr key={item.id} className="border-b border-[#333] hover:bg-[#252525] transition-colors">
+                        <td className="p-4">
+                          <div className="font-pixel text-[10px] text-white">{item.title}</div>
+                          {item.description && <div className="text-[8px] text-[#888] font-sans mt-1 line-clamp-1">{item.description}</div>}
+                        </td>
+                        {contentSubTab === 'courses' && (
+                          <td className="p-4 font-pixel text-[10px] text-[#39ff14]">{item.languageId}</td>
+                        )}
+                        {contentSubTab === 'sections' && (
+                          <td className="p-4 font-pixel text-[10px] text-[#aaa]">{item.courseTitle}</td>
+                        )}
+                        {contentSubTab === 'chapters' && (
+                          <td className="p-4 font-pixel text-[10px] text-[#aaa]">{item.sectionTitle}</td>
+                        )}
+                        {contentSubTab === 'lessons' && (
+                          <td className="p-4 font-pixel text-[10px] text-[#aaa]">{item.chapterTitle}</td>
+                        )}
+                        <td className="p-4 font-pixel text-[10px] text-yellow-400">{item.order}</td>
+                        <td className="p-4 text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            <button 
+                              onClick={() => {
+                                const typeMap: Record<string, 'course' | 'section' | 'chapter' | 'lesson'> = {
+                                  courses: 'course',
+                                  sections: 'section',
+                                  chapters: 'chapter',
+                                  lessons: 'lesson'
+                                };
+                                setEditingItem({ type: typeMap[contentSubTab], id: item.id, data: { ...item } });
+                              }}
+                              className="p-2 hover:bg-[#333] rounded-lg text-[#39ff14] transition-colors"
+                              title="Edit"
+                            >
+                              <Edit className="w-4 h-4" />
+                            </button>
+                            <button 
+                              onClick={() => {
+                                if (contentSubTab === 'courses') handleDeleteCourse(item.id);
+                                else if (contentSubTab === 'sections') handleDeleteSection(item.id);
+                                else if (contentSubTab === 'chapters') handleDeleteChapter(item.id);
+                                else if (contentSubTab === 'lessons') handleDeleteLesson(item.id);
+                              }}
+                              className="p-2 hover:bg-[#333] rounded-lg text-red-500 transition-colors"
+                              title="Delete"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                    {getFilteredAndSortedData().length === 0 && (
+                      <tr>
+                        <td colSpan={5} className="p-8 text-center text-[#888] font-pixel text-[10px]">
+                          NO {contentSubTab.toUpperCase()} FOUND
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Edit Modal Overlay */}
+            {editingItem && (
+              <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                <div className="bg-[#1e1e1e] border-4 border-[#000] p-6 rounded-xl shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] w-full max-w-2xl max-h-[90vh] overflow-y-auto custom-scrollbar">
+                  <div className="flex items-center justify-between mb-6">
+                    <h2 className="text-sm font-pixel text-[#39ff14]">EDIT {editingItem.type.toUpperCase()}</h2>
+                    <button 
+                      onClick={() => setEditingItem(null)}
+                      className="text-[#888] hover:text-white font-pixel text-[10px]"
+                    >
+                      [CLOSE]
+                    </button>
+                  </div>
+
+                  <form onSubmit={handleUpdateItem} className="space-y-4">
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-pixel text-[#888]">TITLE</label>
+                      <input 
+                        type="text" 
+                        value={editingItem.data.title}
+                        onChange={(e) => setEditingItem({ ...editingItem, data: { ...editingItem.data, title: e.target.value } })}
+                        className="w-full bg-[#0d0d0d] border border-[#333] rounded-lg p-3 text-white font-sans focus:outline-none focus:border-[#39ff14]"
+                        required
+                      />
+                    </div>
+
+                    {(editingItem.type === 'course' || editingItem.type === 'lesson') && (
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-pixel text-[#888]">DESCRIPTION</label>
+                        <input 
+                          type="text" 
+                          value={editingItem.data.description}
+                          onChange={(e) => setEditingItem({ ...editingItem, data: { ...editingItem.data, description: e.target.value } })}
+                          className="w-full bg-[#0d0d0d] border border-[#333] rounded-lg p-3 text-white font-sans focus:outline-none focus:border-[#39ff14]"
+                          required
+                        />
+                      </div>
+                    )}
+
+                    {editingItem.type === 'lesson' && (
+                      <>
+                        <div className="space-y-2">
+                          <label className="text-[10px] font-pixel text-[#888]">CONTENT (MARKDOWN)</label>
+                          <textarea 
+                            value={editingItem.data.content}
+                            onChange={(e) => setEditingItem({ ...editingItem, data: { ...editingItem.data, content: e.target.value } })}
+                            className="w-full h-32 bg-[#0d0d0d] border border-[#333] rounded-lg p-3 text-white font-sans focus:outline-none focus:border-[#39ff14] custom-scrollbar"
+                            required
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-[10px] font-pixel text-[#888]">CHALLENGE</label>
+                          <textarea 
+                            value={editingItem.data.challenge}
+                            onChange={(e) => setEditingItem({ ...editingItem, data: { ...editingItem.data, challenge: e.target.value } })}
+                            className="w-full h-24 bg-[#0d0d0d] border border-[#333] rounded-lg p-3 text-white font-sans focus:outline-none focus:border-[#39ff14] custom-scrollbar"
+                            required
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <label className="text-[10px] font-pixel text-[#888]">DIFFICULTY</label>
+                            <select 
+                              value={editingItem.data.type}
+                              onChange={(e) => setEditingItem({ ...editingItem, data: { ...editingItem.data, type: e.target.value } })}
+                              className="w-full bg-[#0d0d0d] border border-[#333] rounded-lg p-3 text-white font-sans focus:outline-none focus:border-[#39ff14]"
+                            >
+                              <option value="beginner">Beginner</option>
+                              <option value="intermediate">Intermediate</option>
+                              <option value="advanced">Advanced</option>
+                            </select>
+                          </div>
+                        </div>
+                      </>
+                    )}
+
+                    <div className="pt-6 border-t border-[#333] flex justify-end gap-3">
+                      <button 
+                        type="button"
+                        onClick={() => setEditingItem(null)}
+                        className="font-pixel text-[10px] px-6 py-3 rounded-lg border border-[#333] text-white hover:bg-[#252525] transition-colors"
+                      >
+                        CANCEL
+                      </button>
+                      <button 
+                        type="submit"
+                        disabled={isSubmitting}
+                        className="bg-[#39ff14] text-black font-pixel text-[10px] px-6 py-3 rounded-lg flex items-center gap-2 hover:bg-[#32e012] transition-colors shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] border-2 border-black disabled:opacity-50"
+                      >
+                        <Save className="w-4 h-4" />
+                        {isSubmitting ? 'SAVING...' : 'SAVE CHANGES'}
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            )}
           </div>
         )}
 

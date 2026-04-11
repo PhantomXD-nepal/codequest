@@ -274,12 +274,10 @@ function PlaygroundContent() {
 
   useEffect(() => {
     if (editorType) {
-      const timer = setTimeout(() => {
-        compileAndRun();
-      }, 500);
-      return () => clearTimeout(timer);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      compileAndRun();
     }
-  }, [html, css, js, ts, py, reactCode, editorType, tsLoaded]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [editorType, tsLoaded]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {

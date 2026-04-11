@@ -53,7 +53,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 
   const navLinks = [
     { href: "/dashboard", label: "LEARN", icon: Home, className: "nav-learn" },
-    { href: "/lessons", label: "LESSONS", icon: BookOpen, className: "nav-lessons" },
+    { href: "/courses", label: "COURSES", icon: BookOpen, className: "nav-courses" },
     { href: "/leaderboard", label: "LEADERBOARD", icon: BarChart2, className: "nav-leaderboard" },
     { href: "/profile", label: "PROFILE", icon: User, className: "nav-profile" },
     { href: "/playground", label: "PLAYGROUND", icon: LayoutDashboard, className: "nav-playground" },

@@ -1,16 +1,42 @@
 "use server";
 
 import { db } from "@/lib/db";
-import { user, userProgress, section, chapter, lesson, achievement, userAchievement, language } from "@/lib/schema";
+import { user, userProgress, section, chapter, lesson, achievement, userAchievement, language, course } from "@/lib/schema";
 import { eq, and } from "drizzle-orm";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { pythonCourse } from "@/lib/lessons";
-import { SUPPORTED_LANGUAGES } from "@/lib/constants";
+import { SUPPORTED_LANGUAGES, LANGUAGES } from "@/lib/constants";
 import fs from "fs";
 import path from "path";
 
 import { unstable_cache, revalidateTag } from "next/cache";
+
+async function getRequiredSession() {
+  const session = await auth.api.getSession({
+    headers: await headers()
+  });
+
+  if (!session?.user) {
+    throw new Error("Unauthorized");
+  }
+
+  return session;
+}
+
+async function getRequiredAdminSession() {
+  const session = await getRequiredSession();
+  
+  const currentUser = await db.query.user.findFirst({
+    where: eq(user.id, session.user.id),
+  });
+
+  if (currentUser?.role !== 'admin') {
+    throw new Error("Unauthorized: Admin role required");
+  }
+
+  return session;
+}
 
 const getCachedUserStats = (userId: string) => unstable_cache(async () => {
   const currentUser = await db.query.user.findFirst({
@@ -109,36 +135,51 @@ export const getAllCourseContentAction = async () => {
 };
 
 export async function seedAllCoursesAction() {
+  await getRequiredAdminSession();
   // Clear existing course data to ensure a clean slate
   // We delete in reverse order of dependencies
   await db.delete(userProgress);
   await db.delete(lesson);
   await db.delete(chapter);
   await db.delete(section);
+  await db.delete(course);
 
-  for (let langIdx = 0; langIdx < SUPPORTED_LANGUAGES.length; langIdx++) {
-    const lang = SUPPORTED_LANGUAGES[langIdx];
+  for (let langIdx = 0; langIdx < LANGUAGES.length; langIdx++) {
+    const lang = LANGUAGES[langIdx];
     
     await db.insert(language).values({
       id: lang.id,
       name: lang.name,
-      title: lang.title,
-      description: lang.description,
+      title: lang.name,
+      description: `Learn ${lang.name}`,
       order: langIdx + 1
     }).onConflictDoUpdate({
       target: language.id,
       set: {
         name: lang.name,
-        title: lang.title,
-        description: lang.description,
+        title: lang.name,
+        description: `Learn ${lang.name}`,
         order: langIdx + 1
       }
     });
+  }
+
+  for (let langIdx = 0; langIdx < SUPPORTED_LANGUAGES.length; langIdx++) {
+    const lang = SUPPORTED_LANGUAGES[langIdx];
+
+    const newCourse = await db.insert(course).values({
+      id: `course-${lang.name.toLowerCase().replace(/\s+/g, '-')}`,
+      title: lang.title,
+      description: lang.description,
+      languageId: lang.languageId,
+      order: langIdx + 1
+    }).returning();
 
     const newSection = await db.insert(section).values({
       id: `section-${lang.name.toLowerCase().replace(/\s+/g, '-')}`,
       title: lang.title,
-      languageId: lang.id,
+      languageId: lang.languageId,
+      courseId: newCourse[0].id,
       order: 1
     }).returning();
 
@@ -211,6 +252,30 @@ export async function seedAllCoursesAction() {
   return { success: true, message: 'All courses seeded successfully' };
 }
 
+export async function getCoursesByLanguageAction(languageId: string) {
+  const courses = await db.query.course.findMany({
+    where: eq(course.languageId, languageId),
+    orderBy: (courses, { asc }) => [asc(courses.order)],
+    with: {
+      sections: {
+        orderBy: (sections, { asc }) => [asc(sections.order)],
+        with: {
+          chapters: {
+            orderBy: (chapters, { asc }) => [asc(chapters.order)],
+            with: {
+              lessons: {
+                orderBy: (lessons, { asc }) => [asc(lessons.order)],
+              }
+            }
+          }
+        }
+      }
+    }
+  });
+
+  return courses;
+}
+
 export async function getCourseContentByLanguageAction(languageName: string) {
   const lang = await db.query.language.findFirst({
     where: eq(language.name, languageName),
@@ -251,10 +316,10 @@ export async function getLessonDetailsAction(lessonId: string) {
     }
   });
 
-  if (!currentLesson) return null;
+  if (!currentLesson || !currentLesson.chapter || !currentLesson.chapter.section || !currentLesson.chapter.section.language) return null;
 
   const lessonLanguage = currentLesson.chapter.section.language.name;
-  const lessonLanguageId = currentLesson.chapter.section.languageId;
+  const lessonLanguageId = currentLesson.chapter.section.languageId || '';
 
   // Fetch all lessons for this language to find the next one
   const languageSections = await db.query.section.findMany({
@@ -297,14 +362,7 @@ export const getCourseContentAction = async (language: string = 'python') => {
 };
 
 export async function completeLessonAction(lessonId: string, xpToAdd: number) {
-  const session = await auth.api.getSession({
-    headers: await headers()
-  });
-
-  if (!session?.user) {
-    throw new Error("Unauthorized");
-  }
-
+  const session = await getRequiredSession();
   const userId = session.user.id;
 
   // Check if already completed
@@ -352,14 +410,7 @@ export async function completeLessonAction(lessonId: string, xpToAdd: number) {
 }
 
 export async function revertLessonProgressAction(lessonId: string) {
-  const session = await auth.api.getSession({
-    headers: await headers()
-  });
-
-  if (!session?.user) {
-    throw new Error("Unauthorized");
-  }
-
+  const session = await getRequiredSession();
   const userId = session.user.id;
 
   const existingProgress = await db.query.userProgress.findFirst({
@@ -444,21 +495,7 @@ export async function getLeaderboardAction() {
 }
 
 export async function getUsersAction() {
-  const session = await auth.api.getSession({
-    headers: await headers()
-  });
-
-  if (!session?.user) {
-    throw new Error("Unauthorized");
-  }
-
-  const currentUser = await db.query.user.findFirst({
-    where: eq(user.id, session.user.id),
-  });
-
-  if (currentUser?.role !== 'admin') {
-    throw new Error("Unauthorized");
-  }
+  await getRequiredAdminSession();
 
   const users = await db.query.user.findMany({
     orderBy: (users, { desc }) => [desc(users.xp)],
@@ -468,40 +505,44 @@ export async function getUsersAction() {
 }
 
 export async function makeMeAdminAction() {
-  const session = await auth.api.getSession({
-    headers: await headers()
-  });
+  const session = await getRequiredSession();
 
-  if (!session?.user) {
-    throw new Error("Unauthorized");
+  if (session.user.email !== 'phantomarcanexd@gmail.com') {
+    throw new Error("Unauthorized: Only the site owner can use this action");
   }
 
   await db.update(user).set({ role: 'admin' }).where(eq(user.id, session.user.id));
   return { success: true };
 }
 
-export async function createSectionAction(data: { title: string; language?: string }) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user) throw new Error("Unauthorized");
+export async function createSectionAction(data: { 
+  title: string; 
+  language?: string;
+  courseId?: string;
+  languageId?: string;
+}) {
+  await getRequiredAdminSession();
   
-  const currentUser = await db.query.user.findFirst({ where: eq(user.id, session.user.id) });
-  if (currentUser?.role !== 'admin') throw new Error("Unauthorized");
-
-  const lang = await db.query.language.findFirst({
-    where: eq(language.name, data.language || 'python'),
-  });
-
-  if (!lang) throw new Error("Language not found");
+  let langId = data.languageId;
+  
+  if (!langId) {
+    const lang = await db.query.language.findFirst({
+      where: eq(language.name, data.language || 'python'),
+    });
+    if (!lang) throw new Error("Language not found");
+    langId = lang.id;
+  }
 
   const existingSections = await db.query.section.findMany({
-    where: eq(section.languageId, lang.id),
+    where: eq(section.languageId, langId),
   });
   const maxOrder = existingSections.reduce((max, s) => Math.max(max, s.order), -1);
 
   const newSection = await db.insert(section).values({
     id: crypto.randomUUID(),
     title: data.title,
-    languageId: lang.id,
+    courseId: data.courseId,
+    languageId: langId,
     order: maxOrder + 1,
   }).returning();
 
@@ -509,12 +550,58 @@ export async function createSectionAction(data: { title: string; language?: stri
   return newSection[0];
 }
 
+export async function createLanguageAction(data: {
+  name: string;
+  title: string;
+  description?: string;
+}) {
+  await getRequiredAdminSession();
+
+  const existingLangs = await db.query.language.findMany();
+  const maxOrder = existingLangs.reduce((max, l) => Math.max(max, l.order), -1);
+
+  const newLang = await db.insert(language).values({
+    id: crypto.randomUUID(),
+    name: data.name.toLowerCase(),
+    title: data.title,
+    description: data.description,
+    order: maxOrder + 1,
+  }).returning();
+
+  revalidateTag('course-content');
+  return newLang[0];
+}
+
+export async function createCourseAction(data: {
+  title: string;
+  description: string;
+  languageId: string;
+  videoUrl?: string;
+  language?: string;
+}) {
+  await getRequiredAdminSession();
+
+  const existingCourses = await db.query.course.findMany({
+    where: eq(course.languageId, data.languageId),
+  });
+  const maxOrder = existingCourses.reduce((max, c) => Math.max(max, c.order), -1);
+
+  const newCourse = await db.insert(course).values({
+    id: crypto.randomUUID(),
+    title: data.title,
+    description: data.description,
+    languageId: data.languageId,
+    videoUrl: data.videoUrl,
+    language: data.language,
+    order: maxOrder + 1,
+  }).returning();
+
+  revalidateTag('course-content');
+  return newCourse[0];
+}
+
 export async function createChapterAction(data: { title: string; sectionId: string }) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user) throw new Error("Unauthorized");
-  
-  const currentUser = await db.query.user.findFirst({ where: eq(user.id, session.user.id) });
-  if (currentUser?.role !== 'admin') throw new Error("Unauthorized");
+  await getRequiredAdminSession();
 
   const existingChapters = await db.query.chapter.findMany({
     where: eq(chapter.sectionId, data.sectionId),
@@ -533,11 +620,7 @@ export async function createChapterAction(data: { title: string; sectionId: stri
 }
 
 export async function importNestedCourseAction(data: any) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user) throw new Error("Unauthorized");
-  
-  const currentUser = await db.query.user.findFirst({ where: eq(user.id, session.user.id) });
-  if (currentUser?.role !== 'admin') throw new Error("Unauthorized");
+  await getRequiredAdminSession();
 
   const langName = data.language || 'python';
   const isSupported = SUPPORTED_LANGUAGES.some(l => l.name === langName);
@@ -599,11 +682,7 @@ export async function createLessonAction(data: {
   type: string;
   chapterId: string;
 }) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user) throw new Error("Unauthorized");
-  
-  const currentUser = await db.query.user.findFirst({ where: eq(user.id, session.user.id) });
-  if (currentUser?.role !== 'admin') throw new Error("Unauthorized");
+  await getRequiredAdminSession();
 
   const existingLessons = await db.query.lesson.findMany({
     where: eq(lesson.chapterId, data.chapterId),
@@ -629,11 +708,7 @@ export async function createLessonAction(data: {
 }
 
 export async function updateSectionAction(id: string, data: { title: string; language?: string }) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user) throw new Error("Unauthorized");
-  
-  const currentUser = await db.query.user.findFirst({ where: eq(user.id, session.user.id) });
-  if (currentUser?.role !== 'admin') throw new Error("Unauthorized");
+  await getRequiredAdminSession();
 
   const updateData: any = { title: data.title };
   if (data.language) {
@@ -655,11 +730,7 @@ export async function updateSectionAction(id: string, data: { title: string; lan
 }
 
 export async function updateChapterAction(id: string, data: { title: string }) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user) throw new Error("Unauthorized");
-  
-  const currentUser = await db.query.user.findFirst({ where: eq(user.id, session.user.id) });
-  if (currentUser?.role !== 'admin') throw new Error("Unauthorized");
+  await getRequiredAdminSession();
 
   const updatedChapter = await db.update(chapter)
     .set({
@@ -682,11 +753,7 @@ export async function updateLessonAction(id: string, data: {
   expectedOutput: string;
   type: string;
 }) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user) throw new Error("Unauthorized");
-  
-  const currentUser = await db.query.user.findFirst({ where: eq(user.id, session.user.id) });
-  if (currentUser?.role !== 'admin') throw new Error("Unauthorized");
+  await getRequiredAdminSession();
 
   const updatedLesson = await db.update(lesson)
     .set({
@@ -706,12 +773,32 @@ export async function updateLessonAction(id: string, data: {
   return updatedLesson[0];
 }
 
+export async function updateCourseAction(id: string, data: {
+  title: string;
+  description: string;
+  languageId: string;
+  videoUrl?: string;
+  language?: string;
+}) {
+  await getRequiredAdminSession();
+
+  const updatedCourse = await db.update(course)
+    .set({
+      title: data.title,
+      description: data.description,
+      languageId: data.languageId,
+      videoUrl: data.videoUrl,
+      language: data.language,
+    })
+    .where(eq(course.id, id))
+    .returning();
+
+  revalidateTag('course-content');
+  return updatedCourse[0];
+}
+
 export async function deleteSectionAction(id: string) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user) throw new Error("Unauthorized");
-  
-  const currentUser = await db.query.user.findFirst({ where: eq(user.id, session.user.id) });
-  if (currentUser?.role !== 'admin') throw new Error("Unauthorized");
+  await getRequiredAdminSession();
 
   // Delete all lessons in all chapters of this section
   const chapters = await db.query.chapter.findMany({
@@ -732,12 +819,74 @@ export async function deleteSectionAction(id: string) {
   return { success: true };
 }
 
-export async function deleteChapterAction(id: string) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user) throw new Error("Unauthorized");
+export async function getCourseByIdAction(id: string) {
+  await getRequiredSession();
+
+  const foundCourse = await db.query.course.findFirst({
+    where: eq(course.id, id),
+    with: {
+      sections: {
+        orderBy: (sections, { asc }) => [asc(sections.order)],
+        with: {
+          chapters: {
+            orderBy: (chapters, { asc }) => [asc(chapters.order)],
+            with: {
+              lessons: {
+                orderBy: (lessons, { asc }) => [asc(lessons.order)],
+              }
+            }
+          }
+        }
+      }
+    }
+  });
+
+  return foundCourse;
+}
+
+export async function getAllCoursesAction() {
+  await getRequiredAdminSession();
   
-  const currentUser = await db.query.user.findFirst({ where: eq(user.id, session.user.id) });
-  if (currentUser?.role !== 'admin') throw new Error("Unauthorized");
+  const courses = await db.query.course.findMany({
+    with: {
+      sections: {
+        with: {
+          chapters: {
+            with: {
+              lessons: true
+            }
+          }
+        }
+      }
+    },
+    orderBy: (courses, { asc }) => [asc(courses.order)],
+  });
+
+  return courses;
+}
+
+export async function deleteCourseAction(id: string) {
+  await getRequiredAdminSession();
+
+  // Delete all lessons, chapters, sections in this course
+  const sections = await db.query.section.findMany({ where: eq(section.courseId, id) });
+  for (const s of sections) {
+    const chapters = await db.query.chapter.findMany({ where: eq(chapter.sectionId, s.id) });
+    for (const c of chapters) {
+      await db.delete(lesson).where(eq(lesson.chapterId, c.id));
+      await db.delete(chapter).where(eq(chapter.id, c.id));
+    }
+    await db.delete(section).where(eq(section.id, s.id));
+  }
+  
+  await db.delete(course).where(eq(course.id, id));
+
+  revalidateTag('course-content');
+  return { success: true };
+}
+
+export async function deleteChapterAction(id: string) {
+  await getRequiredAdminSession();
 
   // Delete all lessons in this chapter
   await db.delete(lesson).where(eq(lesson.chapterId, id));
@@ -750,11 +899,7 @@ export async function deleteChapterAction(id: string) {
 }
 
 export async function deleteLessonAction(id: string) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user) throw new Error("Unauthorized");
-  
-  const currentUser = await db.query.user.findFirst({ where: eq(user.id, session.user.id) });
-  if (currentUser?.role !== 'admin') throw new Error("Unauthorized");
+  await getRequiredAdminSession();
 
   await db.delete(lesson).where(eq(lesson.id, id));
 
@@ -765,8 +910,7 @@ export async function deleteLessonAction(id: string) {
 // --- Achievement Actions ---
 
 export async function getAchievementsAction() {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user) throw new Error("Unauthorized");
+  await getRequiredSession();
   
   const achievements = await db.query.achievement.findMany();
   return achievements;
@@ -779,11 +923,7 @@ export async function createAchievementAction(data: {
   conditionType: string;
   conditionValue: number;
 }) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user) throw new Error("Unauthorized");
-  
-  const currentUser = await db.query.user.findFirst({ where: eq(user.id, session.user.id) });
-  if (currentUser?.role !== 'admin') throw new Error("Unauthorized");
+  await getRequiredAdminSession();
 
   const newAchievement = await db.insert(achievement).values({
     id: crypto.randomUUID(),
@@ -804,11 +944,7 @@ export async function updateAchievementAction(id: string, data: {
   conditionType: string;
   conditionValue: number;
 }) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user) throw new Error("Unauthorized");
-  
-  const currentUser = await db.query.user.findFirst({ where: eq(user.id, session.user.id) });
-  if (currentUser?.role !== 'admin') throw new Error("Unauthorized");
+  await getRequiredAdminSession();
 
   const updatedAchievement = await db.update(achievement).set({
     title: data.title,
@@ -822,11 +958,7 @@ export async function updateAchievementAction(id: string, data: {
 }
 
 export async function deleteAchievementAction(id: string) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user) throw new Error("Unauthorized");
-  
-  const currentUser = await db.query.user.findFirst({ where: eq(user.id, session.user.id) });
-  if (currentUser?.role !== 'admin') throw new Error("Unauthorized");
+  await getRequiredAdminSession();
 
   await db.delete(userAchievement).where(eq(userAchievement.achievementId, id));
   await db.delete(achievement).where(eq(achievement.id, id));
@@ -835,8 +967,7 @@ export async function deleteAchievementAction(id: string) {
 }
 
 export async function getUserAchievementsAction() {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user) throw new Error("Unauthorized");
+  const session = await getRequiredSession();
 
   const userAchievements = await db.query.userAchievement.findMany({
     where: eq(userAchievement.userId, session.user.id),
@@ -896,11 +1027,7 @@ export async function checkAndUnlockAchievementsAction() {
 }
 
 export async function deleteAllCoursesAction() {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user) throw new Error("Unauthorized");
-  
-  const currentUser = await db.query.user.findFirst({ where: eq(user.id, session.user.id) });
-  if (currentUser?.role !== 'admin') throw new Error("Unauthorized");
+  await getRequiredAdminSession();
 
   await db.delete(userProgress);
   await db.delete(lesson);
@@ -913,11 +1040,7 @@ export async function deleteAllCoursesAction() {
 }
 
 export async function getLlmsTxtAction() {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user) throw new Error("Unauthorized");
-  
-  const currentUser = await db.query.user.findFirst({ where: eq(user.id, session.user.id) });
-  if (currentUser?.role !== 'admin') throw new Error("Unauthorized");
+  await getRequiredAdminSession();
 
   const filePath = path.join(process.cwd(), "public", "llms.txt");
   if (fs.existsSync(filePath)) {
@@ -927,11 +1050,7 @@ export async function getLlmsTxtAction() {
 }
 
 export async function updateLlmsTxtAction(content: string) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user) throw new Error("Unauthorized");
-  
-  const currentUser = await db.query.user.findFirst({ where: eq(user.id, session.user.id) });
-  if (currentUser?.role !== 'admin') throw new Error("Unauthorized");
+  await getRequiredAdminSession();
 
   const filePath = path.join(process.cwd(), "public", "llms.txt");
   fs.writeFileSync(filePath, content, "utf-8");

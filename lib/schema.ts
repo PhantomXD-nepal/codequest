@@ -83,17 +83,41 @@ export const language = pgTable("language", {
 });
 
 export const languageRelations = relations(language, ({ many }) => ({
+	courses: many(course),
+	sections: many(section),
+}));
+
+export const course = pgTable("course", {
+	id: text("id").primaryKey(),
+	title: text("title").notNull(),
+	description: text("description"),
+	languageId: text("language_id").notNull().references(() => language.id),
+	order: integer("order").notNull().default(0),
+	videoUrl: text("video_url"),
+	language: text("language"),
+});
+
+export const courseRelations = relations(course, ({ one, many }) => ({
+	language: one(language, {
+		fields: [course.languageId],
+		references: [language.id],
+	}),
 	sections: many(section),
 }));
 
 export const section = pgTable("section", {
 	id: text("id").primaryKey(),
 	title: text("title").notNull(),
-	languageId: text("language_id").notNull().references(() => language.id),
+	courseId: text("course_id").references(() => course.id),
+	languageId: text("language_id").references(() => language.id),
 	order: integer("order").notNull().default(0),
 });
 
 export const sectionRelations = relations(section, ({ one, many }) => ({
+	course: one(course, {
+		fields: [section.courseId],
+		references: [course.id],
+	}),
 	language: one(language, {
 		fields: [section.languageId],
 		references: [language.id],
@@ -118,14 +142,14 @@ export const chapterRelations = relations(chapter, ({ one, many }) => ({
 
 export const lesson = pgTable("lesson", {
 	id: text("id").primaryKey(),
-	chapterId: text("chapter_id").notNull().references(() => chapter.id),
+	chapterId: text("chapter_id").references(() => chapter.id),
 	title: text("title").notNull(),
 	description: text("description").notNull(),
 	content: text("content").notNull(),
 	challenge: text("challenge").notNull(),
 	hint: text("hint"),
 	initialCode: text("initial_code").notNull(),
-	expectedOutput: text("expected_output").notNull(),
+	expectedOutput: text("expected_output"),
 	type: text("type").notNull(),
 	order: integer("order").notNull().default(0),
 });

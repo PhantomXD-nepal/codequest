@@ -3,6 +3,24 @@ import { sql } from "drizzle-orm"
 
 
 
+export const course = pgTable("course", {
+	id: text().primaryKey().notNull(),
+	title: text().notNull(),
+	description: text(),
+	languageId: text("language_id").notNull(),
+	order: integer().default(0).notNull(),
+	videoUrl: text("video_url"),
+	language: text(),
+});
+
+export const language = pgTable("language", {
+	id: text().primaryKey().notNull(),
+	name: text().notNull(),
+	title: text().notNull(),
+	description: text(),
+	order: integer().default(0).notNull(),
+});
+
 export const user = pgTable("user", {
 	id: text().primaryKey().notNull(),
 	name: text().notNull(),
@@ -39,9 +57,21 @@ export const session = pgTable("session", {
 export const section = pgTable("section", {
 	id: text().primaryKey().notNull(),
 	title: text().notNull(),
-	language: text().default('python').notNull(),
+	courseId: text("course_id"),
+	languageId: text("language_id"),
 	order: integer().default(0).notNull(),
-});
+}, (table) => [
+	foreignKey({
+			columns: [table.courseId],
+			foreignColumns: [course.id],
+			name: "section_course_id_fkey"
+		}),
+	foreignKey({
+			columns: [table.languageId],
+			foreignColumns: [language.id],
+			name: "section_language_id_fkey"
+		}),
+]);
 
 export const account = pgTable("account", {
 	id: text().primaryKey().notNull(),

@@ -129,6 +129,21 @@ export function Hero() {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const router = useRouter();
 
+  const { data: session } = authClient.useSession();
+
+  const handleGetStarted = () => {
+    if (session) {
+      const onboardingData = localStorage.getItem('onboarding_data');
+      if (onboardingData) {
+        router.push('/dashboard');
+      } else {
+        setShowOnboarding(true);
+      }
+    } else {
+      setShowOnboarding(true);
+    }
+  };
+
   return (
     <section className="relative w-full h-screen overflow-hidden bg-[#070b0a] flex flex-col items-center justify-center px-6">
       {/* Background Overlays */}
@@ -184,7 +199,7 @@ export function Hero() {
 
         <div className="hero-text">
           <button 
-            onClick={() => setShowOnboarding(true)}
+            onClick={handleGetStarted}
             className="group bg-[#5ed29c] text-[#070b0a] font-inter font-bold text-sm uppercase tracking-wider px-8 py-4 rounded-full flex items-center gap-3 hover:bg-white transition-all duration-300"
           >
             Get Started
