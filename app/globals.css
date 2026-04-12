@@ -1,187 +1,121 @@
 @import "tailwindcss";
 @import "tw-animate-css";
-@import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400..700&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Be+Vietnam+Pro:wght@300;400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap');
 
 @theme {
-  --font-handwritten: "Caveat", cursive;
-  --font-pixel: "Press Start 2P", system-ui;
-  --color-background: hsl(var(--background));
-  --color-foreground: hsl(var(--foreground));
+  --font-headline: "Plus Jakarta Sans", sans-serif;
+  --font-body: "Be Vietnam Pro", sans-serif;
+  --font-label: "Be Vietnam Pro", sans-serif;
 
-  --color-card: hsl(var(--card));
-  --color-card-foreground: hsl(var(--card-foreground));
+  --color-on-surface: #2e2a50;
+  --color-secondary-dim: #764400;
+  --color-surface-container-lowest: #ffffff;
+  --color-error-dim: #a70138;
+  --color-error: #b41340;
+  --color-inverse-on-surface: #9e97c5;
+  --color-surface-tint: #254dd5;
+  --color-surface-variant: #dfd8ff;
+  --color-surface-container-high: #e5deff;
+  --color-tertiary: #9720ab;
+  --color-on-tertiary-fixed-variant: #660076;
+  --color-on-primary-fixed: #000000;
+  --color-surface: #f9f4ff;
+  --color-primary: #254dd5;
+  --color-on-primary: #f2f1ff;
+  --color-on-surface-variant: #5c5680;
+  --color-on-background: #2e2a50;
+  --color-tertiary-container: #f288ff;
+  --color-on-tertiary-container: #570066;
+  --color-surface-container-highest: #dfd8ff;
+  --color-on-error-container: #510017;
+  --color-primary-dim: #0e3fc9;
+  --color-primary-container: #839aff;
+  --color-inverse-surface: #0d072e;
+  --color-background: #f9f4ff;
+  --color-secondary-container: #ffc791;
+  --color-primary-fixed-dim: #708bff;
+  --color-outline-variant: #aea8d6;
+  --color-outline: #77729d;
+  --color-error-container: #f74b6d;
+  --color-tertiary-fixed: #f288ff;
+  --color-on-tertiary-fixed: #2f0038;
+  --color-secondary-fixed: #ffc791;
+  --color-on-secondary-fixed-variant: #774400;
+  --color-surface-container: #ebe5ff;
+  --color-surface-container-low: #f4eeff;
+  --color-on-secondary: #fff0e5;
+  --color-on-tertiary: #ffeefb;
+  --color-surface-bright: #f9f4ff;
+  --color-surface-dim: #d6cfff;
+  --color-on-secondary-container: #6a3c00;
+  --color-on-primary-fixed-variant: #00217b;
+  --color-secondary: #874e00;
+  --color-on-primary-container: #001965;
+  --color-tertiary-dim: #89089e;
+  --color-inverse-primary: #6c88ff;
+  --color-on-secondary-fixed: #4f2c00;
+  --color-tertiary-fixed-dim: #ea73fb;
+  --color-secondary-fixed-dim: #ffb467;
+  --color-primary-fixed: #839aff;
+  --color-on-error: #ffefef;
 
-  --color-popover: hsl(var(--popover));
-  --color-popover-foreground: hsl(var(--popover-foreground));
+  --radius-lg: 2rem;
+  --radius-xl: 3rem;
+  --radius-full: 9999px;
+}
 
-  --color-primary: hsl(var(--primary));
-  --color-primary-foreground: hsl(var(--primary-foreground));
-
-  --color-secondary: hsl(var(--secondary));
-  --color-secondary-foreground: hsl(var(--secondary-foreground));
-
-  --color-muted: hsl(var(--muted));
-  --color-muted-foreground: hsl(var(--muted-foreground));
-
-  --color-accent: hsl(var(--accent));
-  --color-accent-foreground: hsl(var(--accent-foreground));
-
-  --color-destructive: hsl(var(--destructive));
-  --color-destructive-foreground: hsl(var(--destructive-foreground));
-
-  --color-border: hsl(var(--border));
-  --color-input: hsl(var(--input));
-  --color-ring: hsl(var(--ring));
-
-  --radius-lg: var(--radius);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-sm: calc(var(--radius) - 4px);
+.dark {
+  --color-background: #0d072e;
+  --color-on-background: #f9f4ff;
+  --color-surface: #1a1c1e;
+  --color-on-surface: #f9f4ff;
+  --color-surface-container-low: #1a1c1e;
+  --color-surface-container-lowest: #0d072e;
+  --color-surface-container: #2e2a50;
+  --color-surface-container-high: #3f3f46;
+  --color-surface-container-highest: #52525b;
+  --color-on-surface-variant: #aea8d6;
+  --color-outline: #77729d;
+  --color-outline-variant: #5c5680;
 }
 
 @layer base {
-  :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
-
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
-
-    --radius: 0.5rem;
-  }
-
-  .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-  }
-}
-
-@layer base {
-  * {
-    @apply border-border;
-  }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-on-surface font-body;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-headline;
   }
 }
 
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
 }
 
-.fade-in {
-  animation: fadeIn 0.5s ease-in forwards;
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #dfd8ff;
+  border-radius: 10px;
 }
 
-.fade-in-subtitle {
-  animation: fadeIn 0.5s ease-in forwards;
+@keyframes float {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-20px) rotate(2deg); }
 }
-
-.mc-noise {
-  display: none;
+@keyframes pulse-ring {
+  0% { transform: scale(0.8); opacity: 0.5; }
+  100% { transform: scale(1.4); opacity: 0; }
 }
-
-/* Minecraft UI Utilities */
-.mc-border {
-  border: 4px solid #000;
-  box-shadow: inset -4px -4px 0px 0px rgba(0,0,0,0.2), inset 4px 4px 0px 0px rgba(255,255,255,0.2);
+@keyframes progress-fill {
+  0% { width: 0%; }
+  100% { width: 100%; }
 }
-
-.mc-button {
-  position: relative;
-  background-color: #7c7c7c;
-  border: 4px solid #000;
-  box-shadow: inset -4px -4px 0px 0px #5a5a5a, inset 4px 4px 0px 0px #b2b2b2;
-  transition: all 0.1s active;
-}
-
-.mc-button:hover {
-  background-color: #8b8b8b;
-}
-
-.mc-button:active {
-  box-shadow: inset 4px 4px 0px 0px #5a5a5a, inset -4px -4px 0px 0px #b2b2b2;
-  transform: translateY(2px);
-}
-
-.mc-button-green {
-  background-color: #3fb53f;
-  box-shadow: inset -4px -4px 0px 0px #2a7a2a, inset 4px 4px 0px 0px #70d070;
-}
-
-.mc-button-green:hover {
-  background-color: #4cc94c;
-}
-
-.mc-button-blue {
-  background-color: #3f3fb5;
-  box-shadow: inset -4px -4px 0px 0px #2a2a7a, inset 4px 4px 0px 0px #7070d0;
-}
-
-.mc-card {
-  background-color: #c6c6c6;
-  border: 4px solid #000;
-  box-shadow: inset -4px -4px 0px 0px #5a5a5a, inset 4px 4px 0px 0px #ffffff;
-}
-
-.mc-text-shadow {
-  text-shadow: 2px 2px 0px #3f3f3f;
-}
-
-.mc-container {
-  background-color: #0f0f0f;
-}
+.animate-float { animation: float 3s ease-in-out infinite; }
+.animate-ring { animation: pulse-ring 2s cubic-bezier(0.455, 0.03, 0.515, 0.955) infinite; }
+.animate-progress-fill { animation: progress-fill 3s ease-in-out infinite; }

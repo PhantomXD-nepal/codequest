@@ -23,6 +23,8 @@ const AdminEditor = dynamic(() => import("@/components/dashboard/admin-editor"),
 const LearningPath = dynamic(() => import("@/components/dashboard/learning-path"), { ssr: false });
 const SidebarStats = dynamic(() => import("@/components/dashboard/sidebar-stats"), { ssr: false });
 
+import { LoadingScreen } from "@/components/ui/loading-screen";
+
 export default function DashboardClientPage({ 
   initialCourseData, 
   initialStats, 
@@ -290,12 +292,7 @@ export default function DashboardClientPage({
   }, [isPending, session]);
 
   if (isPending || !session) {
-    return (
-      <div className="min-h-screen bg-[#0f0f0f] flex flex-col items-center justify-center gap-6">
-        <div className="w-16 h-16 border-4 border-[#333] border-t-[#39ff14] rounded-full animate-spin" />
-        <div className="text-[#39ff14] font-pixel text-xs animate-pulse tracking-widest">LOADING QUEST DATA...</div>
-      </div>
-    );
+    return <LoadingScreen />;
   }
 
   if (showLanguageSelect) {
@@ -339,18 +336,18 @@ export default function DashboardClientPage({
         language={language}
       />
 
-      <main ref={mainRef} className="max-w-6xl mx-auto px-4 pt-12 pb-12 grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-8 relative z-10">
+      <div ref={mainRef} className="max-w-4xl mx-auto relative z-10">
         <div className="space-y-12">
           {/* Header Controls */}
-          <div className="flex items-center justify-between gap-4 bg-[#1e1e1e] p-4 rounded-xl border-2 border-[#333] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] animate-item">
+          <div className="flex items-center justify-between gap-4 bg-surface-container-lowest p-4 rounded-xl border border-outline-variant shadow-sm animate-item">
             <div className="flex items-center gap-4">
-              <label className="font-pixel text-[10px] text-[#888]">CURRENT QUEST:</label>
+              <label className="font-headline font-bold text-xs text-on-surface-variant uppercase tracking-widest">Current Quest:</label>
               <button 
                 onClick={() => setShowLanguageSelect(true)}
-                className="bg-[#0d0d0d] border border-[#333] rounded-lg px-4 py-2 text-white font-pixel text-xs hover:border-[#39ff14] transition-colors flex items-center gap-3"
+                className="bg-surface-variant border border-outline-variant rounded-lg px-4 py-2 text-on-surface font-headline font-bold text-xs hover:border-primary transition-colors flex items-center gap-3"
               >
-                <span className="text-[#39ff14] uppercase">{language.replace('-', ' ')}</span>
-                <Edit className="w-3 h-3 text-[#888]" />
+                <span className="text-primary uppercase">{language.replace('-', ' ')}</span>
+                <Edit className="w-3 h-3 text-on-surface-variant" />
               </button>
             </div>
             {role === 'admin' && (
@@ -364,7 +361,7 @@ export default function DashboardClientPage({
                     fetchCourse();
                     setIsLoadingCourse(false);
                   }}
-                  className="bg-blue-500 text-white font-pixel text-[8px] px-3 py-2 rounded flex items-center gap-2 hover:bg-blue-600 transition-colors"
+                  className="bg-secondary text-on-secondary font-headline font-bold text-[10px] px-3 py-2 rounded flex items-center gap-2 hover:brightness-110 transition-all shadow-sm"
                 >
                   <Database className="w-3 h-3" />
                   SEED ALL
@@ -377,7 +374,7 @@ export default function DashboardClientPage({
                     setEditorData({ title: '', description: '', content: '', challenge: '', hint: '', initialCode: '', expectedOutput: '', type: 'beginner' });
                     setIsEditorOpen(true);
                   }}
-                  className="bg-[#39ff14] text-black font-pixel text-[8px] px-3 py-2 rounded flex items-center gap-2 hover:bg-[#32e012] transition-colors"
+                  className="bg-primary text-on-primary font-headline font-bold text-[10px] px-3 py-2 rounded flex items-center gap-2 hover:brightness-110 transition-all shadow-sm"
                 >
                   <Plus className="w-3 h-3" />
                   ADD SECTION
@@ -388,14 +385,14 @@ export default function DashboardClientPage({
 
           {isLoadingCourse ? (
             <div className="flex justify-center py-12">
-              <div className="w-12 h-12 border-4 border-[#333] border-t-[#39ff14] rounded-full animate-spin" />
+              <div className="w-12 h-12 border-4 border-surface-variant border-t-primary rounded-full animate-spin" />
             </div>
           ) : (
             <LearningPath 
               courseData={courseData}
               completedLessons={completedLessons}
               role={role}
-              onLessonClick={(id, locked) => { if (!locked) router.push(`/lesson/${id}`); }}
+              onLessonClick={(id, locked) => { if (!locked) router.push(`/lessons/${id}`); }}
               onAddChapter={(sid) => { setEditorType('chapter'); setParentId(sid); setEditingId(null); setEditorData({ ...editorData, title: '' }); setIsEditorOpen(true); }}
               onAddLesson={(cid) => { setEditorType('lesson'); setParentId(cid); setEditingId(null); setEditorData({ title: '', description: '', content: '', challenge: '', hint: '', initialCode: '', expectedOutput: '', type: 'beginner' }); setIsEditorOpen(true); }}
               onEditSection={(s) => { setEditorType('section'); setEditingId(s.id); setEditorData({ ...editorData, title: s.title }); setIsEditorOpen(true); }}
@@ -405,18 +402,7 @@ export default function DashboardClientPage({
             />
           )}
         </div>
-
-        <aside className="space-y-6 animate-item hidden xl:block">
-          <SidebarStats 
-            xp={xp}
-            streak={streak}
-            rank={rank}
-            role={role}
-            setRole={setRole}
-            onAddSection={() => { setEditorType('section'); setParentId(null); setEditingId(null); setEditorData({ title: '', description: '', content: '', challenge: '', hint: '', initialCode: '', expectedOutput: '', type: 'beginner' }); setIsEditorOpen(true); }}
-          />
-        </aside>
-      </main>
+      </div>
     </DashboardLayout>
   );
 }

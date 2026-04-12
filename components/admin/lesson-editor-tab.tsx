@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import Editor from "@monaco-editor/react";
-import { Play, Save, Youtube } from "lucide-react";
-import { createLessonAction } from "@/app/actions";
+import { Play, Save, Youtube, Sparkles } from "lucide-react";
+import { createLessonAction, generateLessonAction } from "@/app/actions";
 
 import * as Resizable from "react-resizable-panels";
 
@@ -17,6 +17,8 @@ export function LessonEditorTab() {
   const [output, setOutput] = useState<{ stdout: string; stderr: string; exitCode: number; htmlPreview?: string } | null>(null);
   const [isRunning, setIsRunning] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isGeneratingAI, setIsGeneratingAI] = useState(false);
+  const [aiPrompt, setAiPrompt] = useState('');
   
   const [formData, setFormData] = useState({
     title: '',
@@ -203,11 +205,55 @@ export function LessonEditorTab() {
     }
   };
 
+  const handleGenerateAI = async () => {
+    if (!aiPrompt) {
+      alert("Please enter a prompt for the AI.");
+      return;
+    }
+    setIsGeneratingAI(true);
+    try {
+      const lesson = await generateLessonAction(aiPrompt);
+      setFormData({
+        title: lesson.title || '',
+        description: lesson.description || '',
+        content: lesson.content || '',
+        challenge: lesson.challenge || '',
+        hint: lesson.hint || '',
+        type: lesson.type || 'beginner',
+      });
+      setCode(lesson.initialCode || '');
+      alert("Lesson generated successfully!");
+    } catch (err) {
+      console.error("Failed to generate lesson:", err);
+      alert("Failed to generate lesson. Make sure OPENROUTER_API_KEY is set.");
+    } finally {
+      setIsGeneratingAI(false);
+    }
+  };
+
   return (
     <div className="bg-[#1e1e1e] border-4 border-[#000] p-6 rounded-xl shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] flex flex-col gap-6 h-[800px]">
       <div className="flex items-center justify-between shrink-0">
         <h2 className="text-sm font-pixel text-[#39ff14]">INTERACTIVE LESSON EDITOR</h2>
         <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 bg-[#0d0d0d] border border-[#333] rounded-lg px-3 py-1">
+            <input 
+              type="text" 
+              value={aiPrompt}
+              onChange={(e) => setAiPrompt(e.target.value)}
+              placeholder="AI Lesson Prompt..."
+              className="bg-transparent text-[10px] text-white font-sans focus:outline-none w-48"
+            />
+            <button 
+              onClick={handleGenerateAI}
+              disabled={isGeneratingAI}
+              className="text-purple-400 hover:text-purple-300 disabled:opacity-50 transition-colors"
+              title="Generate with AI"
+            >
+              <Sparkles className={`w-4 h-4 ${isGeneratingAI ? 'animate-spin' : ''}`} />
+            </button>
+          </div>
+          <div className="w-[1px] h-6 bg-[#333]" />
           <label className="text-[10px] font-pixel text-[#888]">LANGUAGE:</label>
           <select 
             value={language}

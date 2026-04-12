@@ -74,6 +74,15 @@ export default function AdminCoursesPage() {
     setExpandedChapters(prev => ({ ...prev, [id]: !prev[id] }));
   };
 
+  const toggleAllSections = () => {
+    const allExpanded = courseData.length > 0 && courseData.every(section => expandedSections[section.id]);
+    const newState: Record<string, boolean> = {};
+    courseData.forEach(section => {
+      newState[section.id] = !allExpanded;
+    });
+    setExpandedSections(newState);
+  };
+
   const handleEdit = (type: 'section' | 'chapter' | 'lesson', item: any) => {
     setEditingItem({ type, id: item.id });
     setFormData({ ...item });
@@ -161,9 +170,17 @@ export default function AdminCoursesPage() {
             </h1>
           </div>
         </div>
-        <Link href="/admin" className="bg-[#39ff14] text-black font-pixel text-[10px] px-4 py-2 rounded border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:bg-[#32e012] transition-colors">
-          ADD NEW CONTENT
-        </Link>
+        <div className="flex items-center gap-4">
+          <button 
+            onClick={toggleAllSections}
+            className="bg-[#252525] text-white font-pixel text-[10px] px-4 py-2 rounded border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:bg-[#333] transition-colors"
+          >
+            {courseData.length > 0 && courseData.every(s => expandedSections[s.id]) ? "COLLAPSE ALL" : "EXPAND ALL"}
+          </button>
+          <Link href="/admin" className="bg-[#39ff14] text-black font-pixel text-[10px] px-4 py-2 rounded border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:bg-[#32e012] transition-colors">
+            ADD NEW CONTENT
+          </Link>
+        </div>
       </div>
 
       <main className="max-w-6xl mx-auto px-4 py-8">

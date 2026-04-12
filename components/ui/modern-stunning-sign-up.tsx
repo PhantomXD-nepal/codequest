@@ -2,11 +2,9 @@
 
 import * as React from "react"
 import { useState, useRef } from "react";
-import gsap from "gsap";
-import { useGSAP } from "@gsap/react";
+import { motion } from "motion/react";
 import { Mail, Lock, User, Github, Chrome, ArrowRight } from "lucide-react";
 import Link from "next/link";
-import Image from "next/image";
 
 import { authClient } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
@@ -20,9 +18,6 @@ const SignUp1 = () => {
   const [avatar, setAvatar] = React.useState("");
   const router = useRouter();
   
-  const containerRef = useRef<HTMLDivElement>(null);
-  const cardRef = useRef<HTMLDivElement>(null);
-
   React.useEffect(() => {
     const onboardingData = localStorage.getItem('onboarding_data');
     if (onboardingData) {
@@ -36,15 +31,6 @@ const SignUp1 = () => {
     }
   }, []);
 
-  useGSAP(() => {
-    const tl = gsap.timeline({ defaults: { ease: "power3.out" } });
-    
-    tl.fromTo(cardRef.current, 
-      { opacity: 0, y: 40 },
-      { opacity: 1, y: 0, duration: 1 }
-    );
-  }, { scope: containerRef });
-  
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name || !email || !password) {
@@ -71,31 +57,31 @@ const SignUp1 = () => {
   };
 
   return (
-    <div ref={containerRef} className="min-h-screen flex flex-col items-center justify-center bg-[#070b0a] relative overflow-hidden w-full font-inter selection:bg-[#5ed29c] selection:text-black">
-      {/* Background Elements */}
-      <div className="absolute inset-0 z-0 pointer-events-none">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-[#5ed29c]/5 rounded-full blur-[120px]" />
-        <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 mix-blend-overlay" />
-      </div>
+    <div className="min-h-screen flex flex-col items-center justify-center bg-background relative overflow-hidden w-full font-body selection:bg-primary-container/30">
+      {/* Background Decor */}
+      <div className="absolute -top-24 -left-24 w-96 h-96 bg-surface-variant/30 rounded-full blur-3xl pointer-events-none"></div>
+      <div className="absolute top-1/2 -right-48 w-[32rem] h-[32rem] bg-tertiary-container/20 rounded-full blur-[100px] pointer-events-none"></div>
 
-      <div 
-        ref={cardRef}
-        className="relative z-10 w-full max-w-md p-8 md:p-12 flex flex-col items-center"
+      <motion.div 
+        initial={{ opacity: 0, y: 40 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.8, type: "spring", bounce: 0.4 }}
+        className="relative z-10 w-full max-w-md p-8 md:p-12 flex flex-col items-center bg-surface-container-lowest rounded-3xl border border-outline-variant/20 shadow-2xl"
       >
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2 mb-12 group">
-          <div className="w-10 h-10 bg-white rounded-sm flex items-center justify-center group-hover:bg-[#5ed29c] transition-colors duration-300">
-            <span className="text-black font-bold text-2xl">C</span>
+          <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center shadow-md group-hover:scale-110 transition-transform duration-300">
+            <span className="material-symbols-outlined text-white text-xl">terminal</span>
           </div>
-          <span className="text-white font-bold tracking-tighter text-2xl">CODEQUEST</span>
+          <span className="text-on-surface font-headline font-black tracking-tighter text-2xl">CodeQuest</span>
         </Link>
         
         <div className="w-full text-center mb-10">
-          <h2 className="text-3xl font-bold text-white mb-3 tracking-tight">
+          <h2 className="text-3xl font-headline font-extrabold text-on-surface mb-3 tracking-tight">
             Create account
           </h2>
-          <p className="text-white/50 text-sm">
-            Join the community of developers
+          <p className="text-on-surface-variant text-sm font-medium">
+            Join the community of young creators
           </p>
         </div>
 
@@ -103,88 +89,90 @@ const SignUp1 = () => {
         <form onSubmit={handleSignUp} className="flex flex-col w-full gap-5">
           <div className="flex flex-col gap-4">
             <div className="relative group">
-              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-white/30 group-focus-within:text-[#5ed29c] transition-colors">
+              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-on-surface-variant group-focus-within:text-primary transition-colors">
                 <User size={18} />
               </div>
               <input
-                placeholder="Full name"
+                placeholder="Hero Name"
                 type="text"
                 value={name}
-                className="w-full pl-12 pr-4 py-4 bg-white/[0.03] border border-white/10 rounded-xl text-white placeholder-white/30 text-sm focus:outline-none focus:border-[#5ed29c]/50 focus:bg-white/[0.05] transition-all"
+                className="w-full pl-12 pr-4 py-4 bg-surface-container-low border border-outline-variant/30 rounded-xl text-on-surface placeholder-on-surface-variant/50 text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all font-medium"
                 onChange={(e) => setName(e.target.value)}
               />
             </div>
             <div className="relative group">
-              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-white/30 group-focus-within:text-[#5ed29c] transition-colors">
+              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-on-surface-variant group-focus-within:text-primary transition-colors">
                 <Mail size={18} />
               </div>
               <input
                 placeholder="Email address"
                 type="email"
                 value={email}
-                className="w-full pl-12 pr-4 py-4 bg-white/[0.03] border border-white/10 rounded-xl text-white placeholder-white/30 text-sm focus:outline-none focus:border-[#5ed29c]/50 focus:bg-white/[0.05] transition-all"
+                className="w-full pl-12 pr-4 py-4 bg-surface-container-low border border-outline-variant/30 rounded-xl text-on-surface placeholder-on-surface-variant/50 text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all font-medium"
                 onChange={(e) => setEmail(e.target.value)}
               />
             </div>
             <div className="relative group">
-              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-white/30 group-focus-within:text-[#5ed29c] transition-colors">
+              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-on-surface-variant group-focus-within:text-primary transition-colors">
                 <Lock size={18} />
               </div>
               <input
-                placeholder="Password"
+                placeholder="Secret Password"
                 type="password"
                 value={password}
-                className="w-full pl-12 pr-4 py-4 bg-white/[0.03] border border-white/10 rounded-xl text-white placeholder-white/30 text-sm focus:outline-none focus:border-[#5ed29c]/50 focus:bg-white/[0.05] transition-all"
+                className="w-full pl-12 pr-4 py-4 bg-surface-container-low border border-outline-variant/30 rounded-xl text-on-surface placeholder-on-surface-variant/50 text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all font-medium"
                 onChange={(e) => setPassword(e.target.value)}
               />
             </div>
             {error && (
-              <div className="text-sm text-red-400 px-1">{error}</div>
+              <div className="text-sm text-error font-medium px-1">{error}</div>
             )}
           </div>
 
-          <button
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
             type="submit"
             disabled={isLoading}
-            className="w-full group bg-[#5ed29c] text-[#070b0a] font-bold text-sm uppercase tracking-widest py-4 rounded-xl flex items-center justify-center gap-3 hover:bg-white transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed mt-2"
+            className="w-full group bg-gradient-to-br from-primary to-primary-container text-white font-headline font-extrabold text-lg py-4 rounded-xl flex items-center justify-center gap-3 shadow-[0_4px_14px_rgba(37,77,213,0.3)] disabled:opacity-50 disabled:cursor-not-allowed mt-2"
           >
-            {isLoading ? "Creating..." : "Sign Up"}
-            {!isLoading && <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />}
-          </button>
+            {isLoading ? "Creating..." : "Start Adventure"}
+            {!isLoading && <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />}
+          </motion.button>
 
           <div className="relative py-6">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-white/10"></div>
+              <div className="w-full border-t border-outline-variant/20"></div>
             </div>
-            <div className="relative flex justify-center text-xs uppercase tracking-widest">
-              <span className="bg-[#070b0a] px-4 text-white/30">Or sign up with</span>
+            <div className="relative flex justify-center text-xs uppercase tracking-widest font-bold">
+              <span className="bg-surface-container-lowest px-4 text-on-surface-variant">Or sign up with</span>
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <button type="button" className="py-3 px-4 bg-white/[0.03] border border-white/10 rounded-xl text-white text-xs font-medium flex items-center justify-center gap-3 hover:bg-white/[0.08] transition-colors">
+            <button type="button" className="py-3 px-4 bg-surface-container-low border border-outline-variant/30 rounded-xl text-on-surface text-sm font-bold flex items-center justify-center gap-3 hover:bg-surface-container transition-colors">
               <Chrome className="w-4 h-4" />
               Google
             </button>
-            <button type="button" className="py-3 px-4 bg-white/[0.03] border border-white/10 rounded-xl text-white text-xs font-medium flex items-center justify-center gap-3 hover:bg-white/[0.08] transition-colors">
+            <button type="button" className="py-3 px-4 bg-surface-container-low border border-outline-variant/30 rounded-xl text-on-surface text-sm font-bold flex items-center justify-center gap-3 hover:bg-surface-container transition-colors">
               <Github className="w-4 h-4" />
               GitHub
             </button>
           </div>
 
           <div className="w-full text-center mt-8">
-            <span className="text-sm text-white/50">
+            <span className="text-sm text-on-surface-variant font-medium">
               Already have an account?{" "}
               <Link
                 href="/signin"
-                className="text-white font-medium hover:text-[#5ed29c] transition-colors"
+                className="text-primary font-bold hover:underline transition-all"
               >
                 Sign in
               </Link>
             </span>
           </div>
         </form>
-      </div>
+      </motion.div>
     </div>
   );
 };

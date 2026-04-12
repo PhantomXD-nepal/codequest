@@ -1056,3 +1056,49 @@ export async function updateLlmsTxtAction(content: string) {
   fs.writeFileSync(filePath, content, "utf-8");
   return { success: true };
 }
+
+export async function generateLessonAction(prompt: string) {
+  await getRequiredAdminSession();
+  
+  const apiKey = process.env.OPENROUTER_API_KEY;
+  if (!apiKey) {
+    throw new Error("OPENROUTER_API_KEY is not set. Please add it to your environment variables.");
+  }
+
+  const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: "nvidia/nemotron-3-super-120b-a12b:free",
+      messages: [
+        { 
+          role: "system", 
+          content: "You are an expert coding tutor for children. Generate a fun, engaging lesson in JSON format. The JSON must have: title, description, content (markdown), challenge (short task), hint, initialCode, and expectedOutput. Keep it simple and magical." 
+        },
+        { role: "user", content: prompt }
+      ],
+      response_format: { type: "json_object" }
+    })
+  });
+
+  if (!response.ok) {
+    const error = await response.text();
+    throw new Error(`OpenRouter API error: ${error}`);
+  }
+
+  const data = await response.json();
+  const content = data.choices[0].message.content;
+  try {
+    return JSON.parse(content);
+  } catch (e) {
+    // Fallback if the model doesn't return perfect JSON despite the format request
+    const jsonMatch = content.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      return JSON.parse(jsonMatch[0]);
+    }
+    throw new Error("Failed to parse AI response as JSON");
+  }
+}

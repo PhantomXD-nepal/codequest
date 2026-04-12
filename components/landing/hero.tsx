@@ -1,118 +1,113 @@
 'use client';
 
 import React, { useState } from 'react';
-import { ArrowRight, Menu, X, Terminal } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { authClient } from '@/lib/auth-client';
-import { Owl } from '@/components/ui/owl';
 import { OnboardingModal } from '@/components/dashboard/onboarding';
+import Image from 'next/image';
 
 export function LandingHeader() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { data: session } = authClient.useSession();
 
-  const navLinks = [
-    { label: 'FEATURES', href: '#features' },
-    { label: 'PRICING', href: '#pricing' },
-  ];
-
   return (
     <>
-      <header className="absolute top-0 left-0 w-full z-50 flex items-center justify-between px-8 py-6 md:px-16">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-[#5ed29c] rounded-lg flex items-center justify-center shadow-[0_0_15px_rgba(94,210,156,0.5)]">
-            <Terminal size={18} className="text-[#070b0a]" />
+      <header className="fixed top-0 left-0 right-0 z-50 bg-[#f9f4ff]/80 backdrop-blur-xl shadow-[0_20px_40px_rgba(46,42,80,0.08)]">
+        <div className="max-w-7xl mx-auto flex justify-between items-center px-6 py-4">
+          <div className="flex items-center gap-2">
+            <div className="w-10 h-10 bg-gradient-to-br from-[#254dd5] to-[#839aff] rounded-xl flex items-center justify-center">
+              <span className="material-symbols-outlined text-white" style={{ fontVariationSettings: "'FILL' 1" }}>terminal</span>
+            </div>
+            <span className="text-xl font-black bg-gradient-to-br from-[#254dd5] to-[#839aff] bg-clip-text text-transparent font-headline">CodeQuest</span>
           </div>
-          <span className="text-white font-bold tracking-tighter text-xl hidden sm:block">CODEQUEST</span>
+          
+          <div className="hidden md:flex gap-8 items-center">
+            <nav className="flex gap-6">
+              <a href="#" className="text-[#254dd5] font-extrabold font-headline text-sm tracking-tight hover:scale-105 transition-transform duration-200">Home</a>
+              <a href="#features" className="text-[#2e2a50] font-medium font-headline text-sm tracking-tight hover:scale-105 transition-transform duration-200">Quests</a>
+              <a href="#mission" className="text-[#2e2a50] font-medium font-headline text-sm tracking-tight hover:scale-105 transition-transform duration-200">About Nepal Mission</a>
+            </nav>
+            <div className="flex items-center gap-4">
+              {session ? (
+                <Link href="/dashboard">
+                  <motion.button 
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="px-6 py-2.5 rounded-full bg-gradient-to-br from-primary to-primary-container text-white font-bold text-sm shadow-lg font-headline"
+                  >
+                    Dashboard
+                  </motion.button>
+                </Link>
+              ) : (
+                <>
+                  <Link href="/signin">
+                    <motion.button 
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      className="px-6 py-2.5 rounded-full text-primary font-bold text-sm hover:bg-primary/5 transition-colors font-headline"
+                    >
+                      Sign In
+                    </motion.button>
+                  </Link>
+                  <Link href="/signup">
+                    <motion.button 
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      className="px-6 py-2.5 rounded-full bg-gradient-to-br from-primary to-primary-container text-white font-bold text-sm shadow-lg font-headline"
+                    >
+                      Start Your Quest
+                    </motion.button>
+                  </Link>
+                </>
+              )}
+            </div>
+          </div>
+          
+          <div className="md:hidden">
+            <button onClick={() => setIsMenuOpen(true)}>
+              <span className="material-symbols-outlined text-primary text-3xl">menu</span>
+            </button>
+          </div>
         </div>
-
-        <nav className="hidden md:flex items-center gap-12">
-          {navLinks.map((link) => (
-            <a
-              key={link.label}
-              href={link.href}
-              className="text-white/70 hover:text-[#5ed29c] transition-colors text-base font-medium tracking-wide font-inter"
-            >
-              {link.label}
-            </a>
-          ))}
-        </nav>
-
-        <div className="hidden md:flex items-center gap-6">
-          {session ? (
-            <Link href="/dashboard">
-              <button className="bg-[#5ed29c] text-[#070b0a] font-bold text-xs uppercase tracking-widest px-6 py-3 rounded-full hover:bg-white transition-all duration-300">
-                Dashboard
-              </button>
-            </Link>
-          ) : (
-            <>
-              <Link href="/signin">
-                <button className="text-white font-bold text-xs uppercase tracking-widest px-6 py-3 rounded-full border border-white/20 hover:border-[#5ed29c] hover:text-[#5ed29c] transition-all duration-300">
-                  Sign In
-                </button>
-              </Link>
-              <Link href="/signup">
-                <button className="bg-[#5ed29c] text-[#070b0a] font-bold text-xs uppercase tracking-widest px-6 py-3 rounded-full hover:bg-white transition-all duration-300">
-                  Sign Up
-                </button>
-              </Link>
-            </>
-          )}
-        </div>
-
-        <button 
-          className="md:hidden text-white p-2"
-          onClick={() => setIsMenuOpen(true)}
-        >
-          <Menu size={24} />
-        </button>
       </header>
 
       <AnimatePresence>
         {isMenuOpen && (
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] bg-[#070b0a] flex flex-col items-center justify-center gap-8"
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="fixed inset-0 z-[100] bg-background flex flex-col items-center justify-center gap-8"
           >
             <button 
-              className="absolute top-8 right-8 text-white p-2"
+              className="absolute top-6 right-6 text-on-surface p-2"
               onClick={() => setIsMenuOpen(false)}
             >
-              <X size={32} />
+              <span className="material-symbols-outlined text-3xl">close</span>
             </button>
-            {navLinks.map((link) => (
-              <a
-                key={link.label}
-                href={link.href}
-                className="text-white text-3xl font-bold hover:text-[#5ed29c] transition-colors"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                {link.label}
-              </a>
-            ))}
+            <a href="#" className="text-on-surface text-2xl font-bold font-headline hover:text-primary transition-colors" onClick={() => setIsMenuOpen(false)}>Home</a>
+            <a href="#features" className="text-on-surface text-2xl font-bold font-headline hover:text-primary transition-colors" onClick={() => setIsMenuOpen(false)}>Quests</a>
+            <a href="#mission" className="text-on-surface text-2xl font-bold font-headline hover:text-primary transition-colors" onClick={() => setIsMenuOpen(false)}>About Nepal Mission</a>
             
             <div className="flex flex-col items-center gap-4 mt-8">
               {session ? (
                 <Link href="/dashboard" onClick={() => setIsMenuOpen(false)}>
-                  <button className="bg-[#5ed29c] text-[#070b0a] font-bold text-lg uppercase tracking-widest px-12 py-4 rounded-full">
+                  <button className="bg-gradient-to-br from-primary to-primary-container text-white font-bold text-lg px-12 py-4 rounded-full font-headline">
                     Dashboard
                   </button>
                 </Link>
               ) : (
                 <>
                   <Link href="/signin" onClick={() => setIsMenuOpen(false)}>
-                    <button className="text-white font-bold text-lg uppercase tracking-widest px-12 py-4 rounded-full border border-white/20">
+                    <button className="text-primary font-bold text-lg px-12 py-4 rounded-full font-headline">
                       Sign In
                     </button>
                   </Link>
                   <Link href="/signup" onClick={() => setIsMenuOpen(false)}>
-                    <button className="bg-[#5ed29c] text-[#070b0a] font-bold text-lg uppercase tracking-widest px-12 py-4 rounded-full">
-                      Sign Up
+                    <button className="bg-gradient-to-br from-primary to-primary-container text-white font-bold text-lg px-12 py-4 rounded-full font-headline">
+                      Start Your Quest
                     </button>
                   </Link>
                 </>
@@ -128,7 +123,6 @@ export function LandingHeader() {
 export function Hero() {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const router = useRouter();
-
   const { data: session } = authClient.useSession();
 
   const handleGetStarted = () => {
@@ -145,67 +139,93 @@ export function Hero() {
   };
 
   return (
-    <section className="relative w-full h-screen overflow-hidden bg-[#070b0a] flex flex-col items-center justify-center px-6">
-      {/* Background Overlays */}
-      <div className="absolute inset-0 z-0">
-        <div className="absolute inset-0 bg-gradient-to-r from-[#070b0a] via-transparent to-transparent" />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#070b0a] via-transparent to-transparent opacity-80" />
-      </div>
-
-      {/* Grid System */}
-      <div className="absolute inset-0 z-10 pointer-events-none hidden md:block">
-        <div className="h-full w-[1px] bg-white/10 absolute left-1/4" />
-        <div className="h-full w-[1px] bg-white/10 absolute left-1/2" />
-        <div className="h-full w-[1px] bg-white/10 absolute left-3/4" />
-      </div>
-
-      {/* Central Glow */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 z-10 pointer-events-none w-full max-w-4xl h-64 overflow-hidden">
-        <svg width="100%" height="100%" viewBox="0 0 800 200" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <g filter="url(#filter0_f)">
-            <ellipse cx="400" cy="0" rx="300" ry="80" fill="#0d9488" fillOpacity="0.4" />
-            <ellipse cx="400" cy="0" rx="150" ry="40" fill="#2dd4bf" fillOpacity="0.3" />
-          </g>
-          <defs>
-            <filter id="filter0_f" x="0" y="-105" width="800" height="210" filterUnits="userSpaceOnUse" colorInterpolationFilters="sRGB">
-              <feGaussianBlur stdDeviation="25" result="blur" />
-            </filter>
-          </defs>
-        </svg>
-      </div>
-
-      {/* Hero Content */}
-      <div className="hero-content relative z-20 flex flex-col items-center text-center max-w-4xl mt-24">
+    <section className="relative px-6 py-12 md:py-24 max-w-7xl mx-auto pt-32">
+      <div className="grid lg:grid-cols-12 gap-12 items-center">
         <motion.div 
-          initial={{ y: 20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.8, ease: "easeOut" }}
-          className="w-48 h-48 md:w-64 md:h-64 mb-8"
+          initial={{ opacity: 0, x: -50 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ type: "spring", stiffness: 200, damping: 15 }}
+          className="lg:col-span-6 space-y-8 relative z-10"
         >
-          <Owl state="happy" />
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-surface-container-high text-primary font-bold text-sm font-headline">
+            <span className="material-symbols-outlined text-lg" style={{ fontVariationSettings: "'FILL' 1" }}>auto_awesome</span>
+            Nepal&apos;s Premiere Coding Platform for Kids
+          </div>
+          
+          <h1 className="text-5xl md:text-7xl font-extrabold text-on-surface leading-[1.1] tracking-tight font-headline">
+            Your Coding <span className="bg-gradient-to-r from-primary to-tertiary bg-clip-text text-transparent">Adventure</span> Starts Here
+          </h1>
+          
+          <p className="text-lg md:text-xl text-on-surface-variant max-w-xl font-medium leading-relaxed">
+            Join thousands of young explorers in Nepal learning to build games, apps, and the future. Free, fun, and designed for heroes like you.
+          </p>
+          
+          <div className="flex flex-col sm:flex-row gap-4 pt-4">
+            <motion.button 
+              onClick={handleGetStarted}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="group px-8 py-4 rounded-full bg-gradient-to-br from-primary to-primary-container text-white font-bold text-lg shadow-xl flex items-center justify-center gap-3 font-headline"
+            >
+              Start Your Quest
+              <span className="material-symbols-outlined group-hover:translate-x-1 transition-transform">rocket_launch</span>
+            </motion.button>
+            <motion.button 
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="px-8 py-4 rounded-full bg-surface-container-highest text-on-surface font-bold text-lg hover:bg-surface-variant transition-all font-headline"
+            >
+              View Curriculum
+            </motion.button>
+          </div>
+          
+          <div className="flex items-center gap-6 pt-8">
+            <div className="flex -space-x-3">
+              <div className="w-10 h-10 rounded-full border-4 border-background bg-surface-container-highest overflow-hidden relative">
+                <Image src="https://lh3.googleusercontent.com/aida-public/AB6AXuBLl4podet2mNSsnmJSnCCguNGvZjjS17UnTtrPv4gBpKx_bKNtHWsX8Orkg7dguiCR3239Odd50J7T9GsCwPkW7BkEYV3BvIpAYAq0HAFcJ-8xuDAax2nRUqZ2P29MOksJaL9rstSmWeOKv2BClDLrbPXuX65NREm7JKOLAwTWrYrApPgvdNzn_6z_Q6MJz_LdYvajxOefYfikuThTsvb8KCx7N13IcvW2XIrDETt-bT5y3NVMXCAAWYvCE-kWlFavsbr9NULVqfA" alt="Student" fill sizes="40px" className="object-cover" referrerPolicy="no-referrer" />
+              </div>
+              <div className="w-10 h-10 rounded-full border-4 border-background bg-surface-container-highest overflow-hidden relative">
+                <Image src="https://lh3.googleusercontent.com/aida-public/AB6AXuDCfvEyfOj-TxQfaG6S2EL8c3nOkK3Hckx0_fv-CIptt6xzKxUUu97M7dVi-QuMpzjxsv1pJpCj3__coArIHxWCVBM1VGewj2zEd1fT2xqsnrUZ-PJY48d9RmNE0UEhX5QmL_ZTvWk66fWaZ2g1DHTFTVHv4IoiWj_4bIPo2e8KMGaSDDe62LzVk5PDLUQcHQdRr1VoKYrFMOscNQHzr03y_mmMQaZsdXtD58KGAgK_1crkNenzpObEMF8xLytHla8ftKbZmol0tB4" alt="Student" fill sizes="40px" className="object-cover" referrerPolicy="no-referrer" />
+              </div>
+              <div className="w-10 h-10 rounded-full border-4 border-background bg-surface-container-highest overflow-hidden relative">
+                <Image src="https://lh3.googleusercontent.com/aida-public/AB6AXuBWo02XFwFshrCwj6tJVtRk0Wx4MRCNBhcIZwBYfSp2aIbTlfCmqJyvDzTRCRacRE4FutnFluYqHrrnIp33_xzCLY_-M4IL7CdQzetYiQg1XsqxAiyN4KcoDabiDydKONAm_SWRBlVidzjHQWkDyx-p3w0RtzCklUqZvos59mvHNSpFNuq3Yw9IvxGfJDrIue6hQ6IqKdXt8FjmG_Jjv5WFYdtwPPjB4Vth0Ns0SIUrjUJ4BLRsGv-a3qaLwE1mf5q8nIJBWfmUhoQ" alt="Student" fill sizes="40px" className="object-cover" referrerPolicy="no-referrer" />
+              </div>
+            </div>
+            <p className="text-sm font-semibold text-on-surface-variant"><span className="text-primary">5,000+</span> Kids coding in Nepal</p>
+          </div>
         </motion.div>
 
-        <span className="hero-text text-[#5ed29c] font-plus-jakarta font-bold text-[11px] uppercase tracking-[0.2em] mb-4">
-          Career-Ready Curriculum
-        </span>
-
-        <h1 className="hero-text text-white font-inter font-extrabold text-4xl md:text-[72px] leading-[1.1] tracking-tight uppercase mb-6">
-          LAUNCH YOUR CODING <br className="hidden md:block" /> CAREER<span className="text-[#5ed29c]">.</span>
-        </h1>
-
-        <p className="hero-text text-white/70 font-inter text-sm md:text-base max-w-[512px] mb-10 leading-relaxed">
-          Master in-demand coding skills with our immersive, gamified platform. Build real-world projects and launch your career in tech.
-        </p>
-
-        <div className="hero-text">
-          <button 
-            onClick={handleGetStarted}
-            className="group bg-[#5ed29c] text-[#070b0a] font-inter font-bold text-sm uppercase tracking-wider px-8 py-4 rounded-full flex items-center gap-3 hover:bg-white transition-all duration-300"
-          >
-            Get Started
-            <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
-          </button>
-        </div>
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ type: "spring", stiffness: 200, damping: 20, delay: 0.2 }}
+          className="lg:col-span-6 relative"
+        >
+          {/* Decorative Elements */}
+          <div className="absolute -top-12 -right-12 w-64 h-64 bg-tertiary/10 rounded-full blur-3xl"></div>
+          <div className="absolute -bottom-12 -left-12 w-64 h-64 bg-primary/10 rounded-full blur-3xl"></div>
+          
+          {/* Main Hero Image */}
+          <div className="relative bg-surface-container-low rounded-xl overflow-hidden border-8 border-surface shadow-2xl transform lg:rotate-3 hover:rotate-0 transition-transform duration-700 h-[500px] w-full">
+            <Image src="https://lh3.googleusercontent.com/aida-public/AB6AXuCvq9XhQYUHP1rAHlJwvMw-aB3YwyIBG0ghDD_dFE-srhrAC-GbPKf90g6E7Q_GHWJbj6KWxHa6mbf6ZxGTpuQcNmcUd5swHm5OsbWPxNjlLjcta1i5nZNbtRfEnpH6BIZ84Jfogpf-TrFgIqAsHA22h1CYrHDX2bU0qV7kr9PpGDWVqaX9oz-BIpX4IaA95zAWhhgEdPf4xxu7Fm1k02Lij1ividx3n0SUq42YTZmhFHbeHG46-OUeegBZ3EiIuShSkcNtpQ8YWI8" alt="Kids coding" fill sizes="(max-width: 1024px) 100vw, 50vw" className="object-cover" referrerPolicy="no-referrer" />
+            
+            {/* Floating Glass Card */}
+            <motion.div 
+              initial={{ y: 50, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.5, type: "spring" }}
+              className="absolute bottom-6 left-6 right-6 p-6 bg-surface-container-lowest/80 backdrop-blur-md rounded-lg shadow-xl flex items-center gap-4"
+            >
+              <div className="w-12 h-12 rounded-full bg-secondary-container flex items-center justify-center">
+                <span className="material-symbols-outlined text-on-secondary-container" style={{ fontVariationSettings: "'FILL' 1" }}>emoji_events</span>
+              </div>
+              <div>
+                <p className="text-xs font-bold text-primary uppercase tracking-widest font-headline">Recent Achievement</p>
+                <p className="text-on-surface font-extrabold font-headline">Quest: Logic Mountain Cleared!</p>
+              </div>
+            </motion.div>
+          </div>
+        </motion.div>
       </div>
 
       {showOnboarding && (

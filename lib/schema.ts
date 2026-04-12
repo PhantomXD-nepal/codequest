@@ -9,7 +9,7 @@ export const user = pgTable("user", {
 	image: text("image"),
 	createdAt: timestamp("created_at").notNull(),
 	updatedAt: timestamp("updated_at").notNull(),
-	role: text("role").default("user").notNull(),
+	role: text("role").default("student").notNull(),
 	xp: integer("xp").default(0).notNull(),
 	streak: integer("streak").default(0).notNull(),
 });

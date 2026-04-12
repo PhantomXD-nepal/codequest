@@ -28,6 +28,8 @@ import {
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { DashboardLayout } from "@/components/ui/dashboard-layout";
+import { motion } from "motion/react";
+import { useTheme } from "next-themes";
 
 const Editor = dynamic(() => import("@monaco-editor/react"), { ssr: false });
 const PanelGroup = dynamic(() => import("react-resizable-panels").then(mod => mod.Group), { ssr: false });
@@ -56,6 +58,7 @@ export default function CourseDetailPage({ params }: { params: Promise<{ id: str
   const [logs, setLogs] = useState<{type: string, message: string, time: string}[]>([]);
   const [srcDoc, setSrcDoc] = useState("");
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const { theme } = useTheme();
 
   useEffect(() => {
     async function fetchData() {
@@ -164,7 +167,7 @@ export default function CourseDetailPage({ params }: { params: Promise<{ id: str
         <!DOCTYPE html>
         <html>
           <head>
-            <style>body { background: #111; color: white; font-family: sans-serif; padding: 1rem; }</style>
+            <style>body { background: #f8f9fa; color: #1a1c1e; font-family: sans-serif; padding: 1rem; }</style>
           </head>
           <body>
             <div id="app">Python Output will appear in console.</div>
@@ -196,7 +199,7 @@ export default function CourseDetailPage({ params }: { params: Promise<{ id: str
         <html>
           <head>
             <style>
-              body { background: #111; color: white; font-family: sans-serif; padding: 1rem; }
+              body { background: #f8f9fa; color: #1a1c1e; font-family: sans-serif; padding: 1rem; }
             </style>
           </head>
           <body>
@@ -239,9 +242,9 @@ export default function CourseDetailPage({ params }: { params: Promise<{ id: str
 
   if (isPending || loading) {
     return (
-      <div className="min-h-screen bg-[#0f0f0f] flex flex-col items-center justify-center gap-6">
-        <div className="w-16 h-16 border-4 border-[#333] border-t-[#39ff14] rounded-full animate-spin" />
-        <div className="text-[#39ff14] font-pixel text-xs animate-pulse tracking-widest">LOADING COURSE...</div>
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-6 font-body">
+        <div className="w-16 h-16 border-4 border-surface-container-high border-t-primary rounded-full animate-spin" />
+        <div className="text-primary font-headline font-bold text-sm animate-pulse tracking-widest uppercase">Loading Course...</div>
       </div>
     );
   }
@@ -249,37 +252,37 @@ export default function CourseDetailPage({ params }: { params: Promise<{ id: str
   if (!course) {
     return (
       <DashboardLayout>
-        <div className="flex flex-col items-center justify-center h-full text-white">
-          <h1 className="text-2xl font-pixel text-red-500 mb-4">COURSE NOT FOUND</h1>
-          <Link href="/courses" className="text-[#39ff14] font-pixel text-xs hover:underline">BACK TO COURSES</Link>
+        <div className="flex flex-col items-center justify-center h-full text-on-surface font-body">
+          <h1 className="text-2xl font-headline font-bold text-error mb-4">Course Not Found</h1>
+          <Link href="/courses" className="text-primary font-headline font-bold text-sm hover:underline">Back to Courses</Link>
         </div>
       </DashboardLayout>
     );
   }
 
   return (
-    <div className="h-screen bg-[#0f0f0f] flex flex-col overflow-hidden text-white font-sans">
+    <div className="h-screen bg-background flex flex-col overflow-hidden text-on-surface font-body">
       {/* Header */}
-      <header className="h-14 border-b border-[#2a2a2a] bg-[#1a1a1a] flex items-center justify-between px-6 shrink-0">
+      <header className="h-14 border-b border-outline-variant/20 bg-surface-container-low flex items-center justify-between px-6 shrink-0">
         <div className="flex items-center gap-4">
-          <Link href="/courses" className="p-2 hover:bg-[#252525] rounded-lg transition-colors">
-            <ArrowLeft className="w-5 h-5 text-[#888] hover:text-white" />
+          <Link href="/courses" className="p-2 hover:bg-surface-container rounded-lg transition-colors">
+            <ArrowLeft className="w-5 h-5 text-on-surface-variant hover:text-on-surface" />
           </Link>
-          <div className="h-6 w-[1px] bg-[#2a2a2a]" />
+          <div className="h-6 w-[1px] bg-outline-variant/20" />
           <div className="flex items-center gap-2">
-            <BookOpen className="w-4 h-4 text-[#39ff14]" />
-            <h1 className="font-pixel text-xs text-[#39ff14] tracking-tighter uppercase">
+            <BookOpen className="w-4 h-4 text-primary" />
+            <h1 className="font-headline font-bold text-sm text-primary tracking-tight capitalize">
               {course.title}
             </h1>
           </div>
         </div>
         
         <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2 bg-[#0d0d0d] px-3 py-1.5 rounded-full border border-[#333]">
-            <div className="w-2 h-2 rounded-full bg-[#39ff14] animate-pulse" />
-            <span className="text-[10px] font-pixel text-[#888]">LIVE SESSION</span>
+          <div className="flex items-center gap-2 bg-surface-container-lowest px-3 py-1.5 rounded-full border border-outline-variant/30">
+            <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+            <span className="text-[10px] font-headline font-bold text-on-surface-variant uppercase tracking-wider">Live Session</span>
           </div>
-          <button className="p-2 hover:bg-[#252525] rounded-lg transition-colors text-[#888]">
+          <button className="p-2 hover:bg-surface-container rounded-lg transition-colors text-on-surface-variant">
             <Settings className="w-5 h-5" />
           </button>
         </div>
@@ -290,46 +293,48 @@ export default function CourseDetailPage({ params }: { params: Promise<{ id: str
         <PanelGroup orientation="horizontal">
           {/* Left Panel: Editor */}
           <Panel defaultSize={60} minSize={30}>
-            <div className="h-full flex flex-col bg-[#141414] border-r border-[#2a2a2a]">
+            <div className="h-full flex flex-col bg-surface-container-lowest border-r border-outline-variant/20">
               {/* Editor Header */}
-              <div className="h-12 border-b border-[#2a2a2a] bg-[#1a1a1a] flex items-center justify-between px-4">
+              <div className="h-12 border-b border-outline-variant/20 bg-surface-container-low flex items-center justify-between px-4">
                 <div className="flex items-center gap-3">
-                  <div className="flex items-center gap-2 px-3 py-1 bg-[#39ff14]/10 rounded-md border border-[#39ff14]/20">
-                    <Code2 className="w-3.5 h-3.5 text-[#39ff14]" />
-                    <span className="text-[10px] font-pixel text-[#39ff14] uppercase">
+                  <div className="flex items-center gap-2 px-3 py-1 bg-primary-container rounded-md border border-primary/20">
+                    <Code2 className="w-3.5 h-3.5 text-on-primary-container" />
+                    <span className="text-[10px] font-headline font-bold text-on-primary-container uppercase">
                       {course?.languageId === 'python' || course?.title?.toLowerCase().includes('python') ? 'main.py' : 'main.js'}
                     </span>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <button 
+                  <motion.button 
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
                     onClick={compileAndRun}
-                    className="flex items-center gap-2 bg-[#39ff14] text-black font-pixel text-[10px] px-4 py-1.5 rounded hover:bg-[#32e012] transition-colors"
+                    className="flex items-center gap-2 bg-primary text-white font-headline font-bold text-xs px-4 py-1.5 rounded-lg hover:bg-primary-dim transition-colors shadow-sm"
                   >
                     <Play className="w-3.5 h-3.5" />
-                    RUN CODE
-                  </button>
+                    Run Code
+                  </motion.button>
                 </div>
               </div>
               
               {/* Challenge Text */}
               {activeLesson && (
-                <div className="bg-[#1e1e1e] p-4 border-b border-[#2a2a2a]">
-                  <h3 className="text-[#39ff14] font-pixel text-[10px] mb-2 uppercase flex items-center gap-2">
+                <div className="bg-surface-container-lowest p-4 border-b border-outline-variant/20">
+                  <h3 className="text-primary font-headline font-bold text-sm mb-2 capitalize flex items-center gap-2">
                     <Terminal className="w-4 h-4" /> {activeLesson.title}
                   </h3>
-                  <p className="text-sm text-zinc-300 font-mono leading-relaxed">
+                  <p className="text-sm text-on-surface-variant font-medium leading-relaxed">
                     {activeLesson.challenge || activeLesson.description}
                   </p>
                 </div>
               )}
 
               {/* Editor */}
-              <div className="flex-1 relative">
+              <div className="flex-1 relative bg-[#1e1e1e]">
                 <Editor
                   height="100%"
                   language={course?.languageId === 'python' || course?.title?.toLowerCase().includes('python') ? 'python' : 'javascript'}
-                  theme="vs-dark"
+                  theme={theme === 'dark' ? 'vs-dark' : 'light'}
                   value={code}
                   onChange={(val) => setCode(val || "")}
                   options={{
@@ -341,40 +346,41 @@ export default function CourseDetailPage({ params }: { params: Promise<{ id: str
                     roundedSelection: false,
                     cursorStyle: "line",
                     automaticLayout: true,
-                    padding: { top: 16, bottom: 16 },
-                    backgroundColor: "#141414"
+                    padding: { top: 16, bottom: 16 }
                   }}
                 />
               </div>
               
               {/* Complete Button */}
               {activeLesson && (
-                <div className="p-4 bg-[#1a1a1a] border-t border-[#2a2a2a]">
-                  <button 
+                <div className="p-4 bg-surface-container-low border-t border-outline-variant/20">
+                  <motion.button 
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
                     onClick={handleCompleteLesson}
                     disabled={isSubmitting}
-                    className="w-full bg-[#39ff14] text-black font-pixel text-xs py-3 rounded-xl hover:bg-[#32e012] transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] border-2 border-black flex items-center justify-center gap-2 disabled:opacity-50"
+                    className="w-full bg-primary text-white font-headline font-bold text-sm py-3 rounded-xl hover:bg-primary-dim transition-all shadow-md flex items-center justify-center gap-2 disabled:opacity-50"
                   >
-                    {isSubmitting ? "SAVING..." : (
+                    {isSubmitting ? "Saving..." : (
                       <>
                         <CheckCircle2 className="w-4 h-4" />
-                        COMPLETE & NEXT
+                        Complete & Next
                       </>
                     )}
-                  </button>
+                  </motion.button>
                 </div>
               )}
             </div>
           </Panel>
 
-          <PanelResizeHandle className="w-1 bg-[#000] hover:bg-[#39ff14] transition-colors cursor-col-resize" />
+          <PanelResizeHandle className="w-1 bg-outline-variant/20 hover:bg-primary transition-colors cursor-col-resize" />
 
           {/* Right Panel: Video & Console */}
           <Panel defaultSize={40} minSize={20}>
             <PanelGroup orientation="vertical">
               {/* Top: Video */}
               <Panel defaultSize={50} minSize={20}>
-                <div className="h-full bg-black relative group overflow-hidden border-b border-[#2a2a2a]">
+                <div className="h-full bg-black relative group overflow-hidden border-b border-outline-variant/20">
                   {course?.videoUrl ? (
                     <iframe 
                       src={getEmbedUrl(course.videoUrl)}
@@ -383,40 +389,40 @@ export default function CourseDetailPage({ params }: { params: Promise<{ id: str
                       allowFullScreen
                     />
                   ) : (
-                    <div className="w-full h-full flex flex-col items-center justify-center gap-4 text-[#444]">
+                    <div className="w-full h-full flex flex-col items-center justify-center gap-4 text-on-surface-variant bg-surface-container-lowest">
                       <Video className="w-12 h-12" />
-                      <span className="font-pixel text-[10px]">NO VIDEO AVAILABLE</span>
+                      <span className="font-headline font-bold text-xs uppercase tracking-wider">No Video Available</span>
                     </div>
                   )}
                 </div>
               </Panel>
 
-              <PanelResizeHandle className="h-1 bg-[#000] hover:bg-[#39ff14] transition-colors cursor-row-resize" />
+              <PanelResizeHandle className="h-1 bg-outline-variant/20 hover:bg-primary transition-colors cursor-row-resize" />
 
               {/* Bottom: Console */}
               <Panel defaultSize={50} minSize={20}>
-                <div className="h-full flex flex-col bg-[#141414]">
-                  <div className="h-10 border-b border-[#2a2a2a] bg-[#1a1a1a] flex items-center justify-between px-4 shrink-0">
-                    <div className="flex items-center gap-2 text-[#888]">
+                <div className="h-full flex flex-col bg-surface-container-lowest">
+                  <div className="h-10 border-b border-outline-variant/20 bg-surface-container-low flex items-center justify-between px-4 shrink-0">
+                    <div className="flex items-center gap-2 text-on-surface-variant">
                       <Terminal className="w-3.5 h-3.5" />
-                      <span className="text-[10px] font-pixel uppercase">OUTPUT</span>
+                      <span className="text-[10px] font-headline font-bold uppercase tracking-wider">Output</span>
                     </div>
                     <button 
                       onClick={() => setLogs([])}
-                      className="text-[#555] hover:text-white transition-colors"
+                      className="text-on-surface-variant hover:text-error transition-colors"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </div>
-                  <div className="flex-1 overflow-y-auto custom-scrollbar p-4 font-mono text-xs">
+                  <div className="flex-1 overflow-y-auto custom-scrollbar p-4 font-mono text-sm bg-[#1e1e1e]">
                     {logs.length === 0 ? (
-                      <div className="text-[#444] italic">No output yet. Run your code to see results.</div>
+                      <div className="text-zinc-500 italic">No output yet. Run your code to see results.</div>
                     ) : (
                       <div className="space-y-2">
                         {logs.map((log, i) => (
                           <div key={i} className={`flex gap-3 ${log.type === 'error' ? 'text-red-400' : 'text-zinc-300'}`}>
-                            <span className="text-[#444] shrink-0">[{log.time}]</span>
-                            <span className="break-all whitespace-pre-wrap">{log.message}</span>
+                            <span className="text-zinc-500 shrink-0">[{log.time}]</span>
+                            <span className="break-all whitespace-pre-wrap font-medium">{log.message}</span>
                           </div>
                         ))}
                       </div>
@@ -442,14 +448,14 @@ export default function CourseDetailPage({ params }: { params: Promise<{ id: str
           width: 6px;
         }
         .custom-scrollbar::-webkit-scrollbar-track {
-          background: #141414;
+          background: #1e1e1e;
         }
         .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: #2a2a2a;
+          background: #3f3f46;
           border-radius: 3px;
         }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: #333;
+          background: #52525b;
         }
       `}</style>
     </div>

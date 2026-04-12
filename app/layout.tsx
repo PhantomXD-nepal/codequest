@@ -1,33 +1,21 @@
 import type { Metadata } from 'next';
-import { Press_Start_2P, Inter, Plus_Jakarta_Sans, Instrument_Serif } from 'next/font/google';
+import { Plus_Jakarta_Sans, Be_Vietnam_Pro } from 'next/font/google';
 import Script from 'next/script';
 import './globals.css';
-
-const minecraftFont = Press_Start_2P({
-  weight: '400',
-  subsets: ['latin'],
-  variable: '--font-minecraft',
-  display: 'swap',
-});
-
-const inter = Inter({
-  subsets: ['latin'],
-  variable: '--font-inter',
-  display: 'swap',
-});
+import { LenisProvider } from '@/components/lenis-provider';
+import { ThemeProvider } from '@/components/theme-provider';
 
 const plusJakartaSans = Plus_Jakarta_Sans({
   subsets: ['latin'],
-  variable: '--font-plus-jakarta',
+  variable: '--font-headline',
   display: 'swap',
 });
 
-const instrumentSerif = Instrument_Serif({
-  weight: '400',
+const beVietnamPro = Be_Vietnam_Pro({
+  weight: ['300', '400', '500', '600', '700'],
   subsets: ['latin'],
-  variable: '--font-instrument',
+  variable: '--font-body',
   display: 'swap',
-  style: 'italic',
 });
 
 export const metadata: Metadata = {
@@ -35,17 +23,30 @@ export const metadata: Metadata = {
   description: 'Learn to code. Level up. Conquer the block.',
 };
 
+export const dynamic = "force-dynamic";
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${minecraftFont.variable} ${inter.variable} ${plusJakartaSans.variable} ${instrumentSerif.variable}`}>
+    <html lang="en" className={`${plusJakartaSans.variable} ${beVietnamPro.variable}`} suppressHydrationWarning>
       <head>
         <Script 
           src="https://cdn.jsdelivr.net/pyodide/v0.25.0/full/pyodide.js" 
           strategy="beforeInteractive"
         />
+        {/* eslint-disable-next-line @next/next/no-page-custom-font */}
+        <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
       </head>
-      <body suppressHydrationWarning>
-        {children}
+      <body>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="light"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <LenisProvider>
+            {children}
+          </LenisProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

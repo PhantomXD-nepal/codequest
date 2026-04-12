@@ -29,7 +29,7 @@ export const user = pgTable("user", {
 	image: text(),
 	createdAt: timestamp("created_at", { mode: 'string' }).notNull(),
 	updatedAt: timestamp("updated_at", { mode: 'string' }).notNull(),
-	role: text().default('user').notNull(),
+	role: text().default('student').notNull(),
 	xp: integer().default(0).notNull(),
 	streak: integer().default(0).notNull(),
 }, (table) => [

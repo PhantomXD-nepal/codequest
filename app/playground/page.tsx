@@ -11,6 +11,9 @@ import parserHtml from "prettier/plugins/html";
 import parserCss from "prettier/plugins/postcss";
 import parserBabel from "prettier/plugins/babel";
 import parserEstree from "prettier/plugins/estree";
+import { motion } from "motion/react";
+import Image from "next/image";
+import { useTheme } from "next-themes";
 
 type EditorType = "web" | "python" | "react" | null;
 
@@ -22,7 +25,7 @@ function PlaygroundContent() {
   
   // Web state
   const [html, setHtml] = useState("<h1>Hello World</h1>\n<div id=\"app\"></div>");
-  const [css, setCss] = useState("h1 { color: #39ff14; font-family: sans-serif; }\nbody { background: #111; color: white; }");
+  const [css, setCss] = useState("h1 { color: #254dd5; font-family: sans-serif; }\nbody { background: #f8f9fa; color: #1a1c1e; }");
   const [js, setJs] = useState("console.log('JS loaded');");
   const [ts, setTs] = useState("const greeting: string = 'TS loaded';\nconsole.log(greeting);");
   const [activeWebTab, setActiveWebTab] = useState<"html" | "css" | "js" | "ts">("html");
@@ -35,17 +38,17 @@ function PlaygroundContent() {
   const [count, setCount] = React.useState(0);
   
   return (
-    <div className="p-6 bg-zinc-900 text-white rounded-xl font-sans shadow-xl max-w-md mx-auto mt-10 border border-zinc-800">
-      <h1 className="text-2xl font-bold mb-4 text-[#00d8ff]">React Playground</h1>
-      <p className="mb-6 text-zinc-400">Build interactive UIs directly in the browser using React and Tailwind CSS.</p>
+    <div className="p-6 bg-white text-slate-900 rounded-2xl font-sans shadow-lg max-w-md mx-auto mt-10 border border-slate-200">
+      <h1 className="text-2xl font-bold mb-4 text-blue-600">React Playground</h1>
+      <p className="mb-6 text-slate-600">Build interactive UIs directly in the browser using React and Tailwind CSS.</p>
       <div className="flex items-center gap-4">
         <button 
           onClick={() => setCount(c => c + 1)}
-          className="px-4 py-2 bg-[#00d8ff] text-black font-bold rounded hover:bg-[#00b8d8] transition-colors"
+          className="px-4 py-2 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition-colors shadow-md"
         >
           Clicks: {count}
         </button>
-        <span className="text-sm text-zinc-500">State updates automatically!</span>
+        <span className="text-sm text-slate-500 font-medium">State updates automatically!</span>
       </div>
     </div>
   );
@@ -215,6 +218,9 @@ function PlaygroundContent() {
                 throw new Error("Failed to load Pyodide");
               }
               let pyodide = await loadPyodide();
+              await pyodide.loadPackage("micropip");
+              const micropip = pyodide.pyimport("micropip");
+              
               pyodide.setStdout({ batched: (msg) => console.log(msg) });
               pyodide.setStderr({ batched: (msg) => console.error(msg) });
               await pyodide.runPythonAsync(\`${py.replace(/\\/g, '\\\\').replace(/`/g, '\\`').replace(/\$/g, '\\$').replace(/</g, '\\x3c')}\`);
@@ -230,7 +236,7 @@ function PlaygroundContent() {
         <!DOCTYPE html>
         <html>
           <head>
-            <style>body { background: #111; color: white; font-family: sans-serif; padding: 1rem; }</style>
+            <style>body { background: #f8f9fa; color: #1a1c1e; font-family: sans-serif; padding: 1rem; }</style>
           </head>
           <body>
             <div id="app">Python Output will appear in console.</div>
@@ -248,7 +254,7 @@ function PlaygroundContent() {
             <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
             <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
             <script src="https://cdn.tailwindcss.com"></script>
-            <style>body { margin: 0; padding: 1rem; background: #111; }</style>
+            <style>body { margin: 0; padding: 1rem; background: #f8f9fa; }</style>
           </head>
           <body>
             ${consoleOverride}
@@ -290,66 +296,103 @@ function PlaygroundContent() {
   }, []);
 
   const clearConsole = () => setLogs([]);
+  const { theme } = useTheme();
 
   if (!editorType) {
     return (
       <DashboardLayout>
-        <div className="flex flex-col items-center justify-center min-h-[calc(100vh-80px)] p-4">
-          <h1 className="text-4xl font-pixel text-[#39ff14] uppercase mb-12 drop-shadow-[4px_4px_0px_rgba(0,0,0,1)] text-center">
-            CHOOSE YOUR EDITOR
-          </h1>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl w-full">
-            {/* Web Editor Card */}
-            <button 
-              onClick={() => setEditorType('web')}
-              className="bg-[#1e1e1e] border-4 border-[#000] p-8 rounded-xl shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] hover:translate-y-1 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all flex flex-col items-center gap-6 group"
-            >
-              <div className="w-20 h-20 bg-[#141414] border-4 border-[#000] rounded-full flex items-center justify-center group-hover:bg-[#39ff14] transition-colors">
-                <Layout className="w-10 h-10 text-[#888] group-hover:text-black" />
+        <main className="lg:pl-64 pt-28 px-6 pb-20">
+          <div className="max-w-7xl mx-auto">
+            <section className="mb-12 relative">
+              <div className="absolute -top-10 -right-10 w-64 h-64 bg-tertiary-container/20 rounded-full blur-3xl -z-10"></div>
+              <div className="absolute top-20 -left-10 w-48 h-48 bg-primary-container/20 rounded-full blur-3xl -z-10"></div>
+              <h1 className="text-4xl md:text-6xl font-headline font-extrabold text-on-surface mb-4 leading-tight">
+                Choose Your <span className="bg-gradient-to-r from-primary to-tertiary bg-clip-text text-transparent">Creative Playground</span>
+              </h1>
+              <p className="text-lg text-on-surface-variant max-w-2xl font-body">
+                Pick a dimension to start building. Whether you&apos;re a logic master, a visual wizard, or a modern architect, your next big quest starts here.
+              </p>
+            </section>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {/* Python Explorer Card */}
+              <div className="group relative flex flex-col bg-surface-container-low rounded-xl overflow-hidden hover:translate-y-[-8px] transition-all duration-300">
+                <div className="h-48 relative overflow-hidden">
+                  <Image alt="Python coding abstract" className="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC3P0uJdpEZvU7WqAdCgKmCWfy4T9F0EwrdVpQs0EkrlCEaBYimCzJBjviKW_MyLkN30wHFYuRHy20hLQ8Lhbh8sAFJq-3itPArQ0_0J27LA6ySYG3ViWYKvSuj5E2nHPwIpC81tNavG9HtKOVE4WCnOw7goNqtPr0fXSp8iZSKw56Nc6-YrwbYYgxhf1Xlb0j784SisbI-cfW9tW9U-oH9m7QLVeT6ym5KBMz1lvWHsQjO10utI2xRaZMjPgyzP4-_9EuhiY4bdVk" width={400} height={200} />
+                  <div className="absolute inset-0 bg-gradient-to-t from-surface-container-low to-transparent"></div>
+                  <div className="absolute bottom-4 left-6 flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center text-white shadow-lg">
+                      <Terminal className="w-6 h-6" />
+                    </div>
+                    <span className="bg-primary/10 text-primary px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider backdrop-blur-md">Logic Quest</span>
+                  </div>
+                </div>
+                <div className="p-8 flex flex-col flex-1">
+                  <h2 className="text-2xl font-headline font-extrabold text-on-surface mb-3">Python Explorer</h2>
+                  <p className="text-on-surface-variant text-sm leading-relaxed mb-8 font-body">
+                    Master the language of data and automation. Solve puzzles, build smart bots, and explore the power of clean code.
+                  </p>
+                  <button onClick={() => setEditorType('python')} className="w-full py-4 bg-gradient-to-br from-primary to-primary-container text-white rounded-full font-headline font-bold text-lg shadow-lg hover:shadow-primary/25 transition-all flex items-center justify-center gap-2 mt-auto">
+                    Launch Playground
+                    <Play className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
-              <div className="text-center">
-                <h2 className="text-xl font-pixel text-white mb-2">WEB EDITOR</h2>
-                <p className="text-sm text-[#888] font-mono">HTML, CSS, JS, TS</p>
+              {/* Web Wizard Card */}
+              <div className="group relative flex flex-col bg-surface-container-low rounded-xl overflow-hidden hover:translate-y-[-8px] transition-all duration-300">
+                <div className="h-48 relative overflow-hidden">
+                  <Image alt="Web Design illustration" className="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBlJeyUyDk-8cpowAif3osxIsvqpbfDr1Irq2IHbGTFF2iZ3HSi86YiZslLgbNlsdTlinsyT6Lem1BOpQcmOX5N2QemAecU-mVdxVOhoplj-r4OTCgmDE2lcVzEuH64fAQdpmcZsx9oOKKrO5nlGvDo1V84PmPK0maKAhNHzlHE4akmXliQs5brkJz3Tpr8AYGlEdC2dwyxdMxdoPpyMB5Hn4LprhOGulX_OrUffvu53tS8xK8v-HVz93Cy4HNUy0iHkKESQmKntIw" width={400} height={200} />
+                  <div className="absolute inset-0 bg-gradient-to-t from-surface-container-low to-transparent"></div>
+                  <div className="absolute bottom-4 left-6 flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-full bg-secondary flex items-center justify-center text-white shadow-lg">
+                      <Wand2 className="w-6 h-6" />
+                    </div>
+                    <span className="bg-secondary/10 text-secondary px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider backdrop-blur-md">Visual Magic</span>
+                  </div>
+                </div>
+                <div className="p-8 flex flex-col flex-1">
+                  <h2 className="text-2xl font-headline font-extrabold text-on-surface mb-3">Web Wizard</h2>
+                  <p className="text-on-surface-variant text-sm leading-relaxed mb-8 font-body">
+                    The architect of the internet. Weave beautiful layouts, add interactive sparks, and bring your digital dreams to life.
+                  </p>
+                  <button onClick={() => setEditorType('web')} className="w-full py-4 bg-gradient-to-br from-secondary to-secondary-fixed text-white rounded-full font-headline font-bold text-lg shadow-lg hover:shadow-secondary/25 transition-all flex items-center justify-center gap-2 mt-auto">
+                    Launch Playground
+                    <Play className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
-            </button>
-
-            {/* Python Editor Card */}
-            <button 
-              onClick={() => setEditorType('python')}
-              className="bg-[#1e1e1e] border-4 border-[#000] p-8 rounded-xl shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] hover:translate-y-1 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all flex flex-col items-center gap-6 group"
-            >
-              <div className="w-20 h-20 bg-[#141414] border-4 border-[#000] rounded-full flex items-center justify-center group-hover:bg-yellow-400 transition-colors">
-                <Terminal className="w-10 h-10 text-[#888] group-hover:text-black" />
+              {/* React Ranger Card */}
+              <div className="group relative flex flex-col bg-surface-container-low rounded-xl overflow-hidden hover:translate-y-[-8px] transition-all duration-300">
+                <div className="h-48 relative overflow-hidden">
+                  <Image alt="React abstract art" className="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDYxxVjYw76CBGOSTRCol4KAiRE8mWWHsrah7rIml74ERuP63gdIlneHQt3NdFJTVpYpMid9o0v3V8ba5QqtyzoBsXgsZxjKm7BYE33EvT-HBD0QnlS3GnrL63metsQf7MyuWhERdMMVLUlf_ILguRKP538BMoMxRfUWvlwR06UpzWRjbvg-r4y4GwOoXROW7y6jRsc2GP24-HnDRlda8p0ODTs_iLO51nJTO6GmeYS-Ae_5Ekz8dJ6YRzTwqKyjiXwqbV9uzqIAS0" width={400} height={200} />
+                  <div className="absolute inset-0 bg-gradient-to-t from-surface-container-low to-transparent"></div>
+                  <div className="absolute bottom-4 left-6 flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-full bg-tertiary flex items-center justify-center text-white shadow-lg">
+                      <Code2 className="w-6 h-6" />
+                    </div>
+                    <span className="bg-tertiary/10 text-tertiary px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider backdrop-blur-md">Pro Engineering</span>
+                  </div>
+                </div>
+                <div className="p-8 flex flex-col flex-1">
+                  <h2 className="text-2xl font-headline font-extrabold text-on-surface mb-3">React Ranger</h2>
+                  <p className="text-on-surface-variant text-sm leading-relaxed mb-8 font-body">
+                    Harness the power of components. Build high-performance apps with modular efficiency. For the true masters of scale.
+                  </p>
+                  <button onClick={() => setEditorType('react')} className="w-full py-4 bg-gradient-to-br from-tertiary to-tertiary-fixed-dim text-white rounded-full font-headline font-bold text-lg shadow-lg hover:shadow-tertiary/25 transition-all flex items-center justify-center gap-2 mt-auto">
+                    Launch Playground
+                    <Play className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
-              <div className="text-center">
-                <h2 className="text-xl font-pixel text-white mb-2">PYTHON EDITOR</h2>
-                <p className="text-sm text-[#888] font-mono">Python 3 (Pyodide)</p>
-              </div>
-            </button>
-
-            {/* React Editor Card */}
-            <button 
-              onClick={() => setEditorType('react')}
-              className="bg-[#1e1e1e] border-4 border-[#000] p-8 rounded-xl shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] hover:translate-y-1 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all flex flex-col items-center gap-6 group"
-            >
-              <div className="w-20 h-20 bg-[#141414] border-4 border-[#000] rounded-full flex items-center justify-center group-hover:bg-[#00d8ff] transition-colors">
-                <Code2 className="w-10 h-10 text-[#888] group-hover:text-black" />
-              </div>
-              <div className="text-center">
-                <h2 className="text-xl font-pixel text-white mb-2">REACT EDITOR</h2>
-                <p className="text-sm text-[#888] font-mono">React 18, JSX, Tailwind</p>
-              </div>
-            </button>
+            </div>
           </div>
-        </div>
+        </main>
       </DashboardLayout>
     );
   }
 
   return (
     <DashboardLayout>
-      <div className="flex flex-col h-[calc(100vh-80px)] p-4 gap-4">
+      <div className="flex flex-col h-[calc(100vh-80px)] p-4 gap-4 bg-background font-body">
         
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
@@ -359,76 +402,80 @@ function PlaygroundContent() {
                 setLogs([]);
                 setActiveLesson(null);
               }}
-              className="p-2 bg-[#1e1e1e] border-2 border-[#000] rounded-lg text-[#888] hover:text-white hover:border-white transition-colors"
+              className="p-2 bg-surface-container-low border border-outline-variant/30 rounded-xl text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors"
               title="Back to Selection"
             >
               <ArrowLeft className="w-5 h-5" />
             </button>
-            <h1 className="text-2xl font-pixel text-[#39ff14] uppercase flex items-center gap-3">
-              {editorType === 'web' ? <Layout className="w-8 h-8" /> : 
-               editorType === 'python' ? <Terminal className="w-8 h-8 text-yellow-400" /> : 
-               <Code2 className="w-8 h-8 text-[#00d8ff]" />}
-              {editorType} PLAYGROUND
+            <h1 className="text-2xl font-headline font-extrabold text-on-surface flex items-center gap-3">
+              {editorType === 'web' ? <Layout className="w-8 h-8 text-primary" /> : 
+               editorType === 'python' ? <Terminal className="w-8 h-8 text-tertiary" /> : 
+               <Code2 className="w-8 h-8 text-secondary" />}
+              <span className="capitalize">{editorType}</span> Playground
             </h1>
           </div>
-          <div className="flex items-center gap-2">
-            <button 
+          <div className="flex items-center gap-3">
+            <motion.button 
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
               onClick={formatCode}
-              className="mc-button mc-button-blue px-4 py-2 flex items-center gap-2 font-pixel text-[10px] text-white"
+              className="px-4 py-2 bg-surface-container-high text-on-surface font-bold rounded-full flex items-center gap-2 hover:bg-surface-container-highest transition-colors text-sm shadow-sm"
               title="Format Code"
             >
               <Wand2 className="w-4 h-4" />
-              FORMAT
-            </button>
-            <button 
+              Format
+            </motion.button>
+            <motion.button 
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
               onClick={compileAndRun}
-              className="mc-button mc-button-green px-6 py-2 flex items-center gap-2 font-pixel text-sm text-white"
+              className="px-6 py-2 bg-primary text-white font-bold rounded-full flex items-center gap-2 hover:bg-primary-dim transition-colors text-sm shadow-md"
             >
               <Play className="w-4 h-4" />
-              RUN
-            </button>
+              Run Code
+            </motion.button>
           </div>
         </div>
 
-        <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-4 min-h-0">
+        <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-6 min-h-0">
           
           {/* Editor Section */}
-          <div className="flex flex-col bg-[#1e1e1e] border-4 border-[#000] rounded-xl shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] overflow-hidden">
+          <div className="flex flex-col bg-surface-container-lowest border border-outline-variant/20 rounded-2xl shadow-sm overflow-hidden">
             
             {editorType === 'web' && (
-              <div className="flex border-b-4 border-[#000] bg-[#141414]">
-                <button onClick={() => setActiveWebTab('html')} className={`flex-1 py-3 font-pixel text-[10px] uppercase flex items-center justify-center gap-2 transition-colors ${activeWebTab === 'html' ? 'bg-[#39ff14] text-black border-b-4 border-transparent' : 'text-[#888] hover:text-white'}`}>
+              <div className="flex border-b border-outline-variant/20 bg-surface-container-low">
+                <button onClick={() => setActiveWebTab('html')} className={`flex-1 py-3 font-headline font-bold text-sm flex items-center justify-center gap-2 transition-colors ${activeWebTab === 'html' ? 'bg-surface-container-lowest text-primary border-b-2 border-primary' : 'text-on-surface-variant hover:text-on-surface'}`}>
                   <Layout className="w-4 h-4" /> HTML
                 </button>
-                <button onClick={() => setActiveWebTab('css')} className={`flex-1 py-3 font-pixel text-[10px] uppercase flex items-center justify-center gap-2 transition-colors border-l-4 border-[#000] ${activeWebTab === 'css' ? 'bg-[#39ff14] text-black border-b-4 border-transparent' : 'text-[#888] hover:text-white'}`}>
+                <button onClick={() => setActiveWebTab('css')} className={`flex-1 py-3 font-headline font-bold text-sm flex items-center justify-center gap-2 transition-colors border-l border-outline-variant/20 ${activeWebTab === 'css' ? 'bg-surface-container-lowest text-primary border-b-2 border-primary' : 'text-on-surface-variant hover:text-on-surface'}`}>
                   <FileType2 className="w-4 h-4" /> CSS
                 </button>
-                <button onClick={() => setActiveWebTab('js')} className={`flex-1 py-3 font-pixel text-[10px] uppercase flex items-center justify-center gap-2 transition-colors border-l-4 border-[#000] ${activeWebTab === 'js' ? 'bg-[#39ff14] text-black border-b-4 border-transparent' : 'text-[#888] hover:text-white'}`}>
+                <button onClick={() => setActiveWebTab('js')} className={`flex-1 py-3 font-headline font-bold text-sm flex items-center justify-center gap-2 transition-colors border-l border-outline-variant/20 ${activeWebTab === 'js' ? 'bg-surface-container-lowest text-primary border-b-2 border-primary' : 'text-on-surface-variant hover:text-on-surface'}`}>
                   <FileJson className="w-4 h-4" /> JS
                 </button>
-                <button onClick={() => setActiveWebTab('ts')} className={`flex-1 py-3 font-pixel text-[10px] uppercase flex items-center justify-center gap-2 transition-colors border-l-4 border-[#000] ${activeWebTab === 'ts' ? 'bg-[#39ff14] text-black border-b-4 border-transparent' : 'text-[#888] hover:text-white'}`}>
+                <button onClick={() => setActiveWebTab('ts')} className={`flex-1 py-3 font-headline font-bold text-sm flex items-center justify-center gap-2 transition-colors border-l border-outline-variant/20 ${activeWebTab === 'ts' ? 'bg-surface-container-lowest text-primary border-b-2 border-primary' : 'text-on-surface-variant hover:text-on-surface'}`}>
                   <Code2 className="w-4 h-4" /> TS
                 </button>
               </div>
             )}
             
             {editorType === 'python' && (
-              <div className="flex border-b-4 border-[#000] bg-[#141414]">
-                <div className="flex-1 py-3 font-pixel text-[10px] uppercase flex items-center justify-center gap-2 bg-yellow-400 text-black">
-                  <Terminal className="w-4 h-4" /> MAIN.PY
+              <div className="flex border-b border-outline-variant/20 bg-surface-container-low">
+                <div className="flex-1 py-3 font-headline font-bold text-sm flex items-center justify-center gap-2 bg-tertiary-container text-on-tertiary-container">
+                  <Terminal className="w-4 h-4" /> main.py
                 </div>
               </div>
             )}
             
             {editorType === 'react' && (
-              <div className="flex border-b-4 border-[#000] bg-[#141414]">
-                <div className="flex-1 py-3 font-pixel text-[10px] uppercase flex items-center justify-center gap-2 bg-[#00d8ff] text-black">
-                  <Code2 className="w-4 h-4" /> APP.JSX
+              <div className="flex border-b border-outline-variant/20 bg-surface-container-low">
+                <div className="flex-1 py-3 font-headline font-bold text-sm flex items-center justify-center gap-2 bg-secondary-container text-on-secondary-container">
+                  <Code2 className="w-4 h-4" /> App.jsx
                 </div>
               </div>
             )}
             
-            <div className="flex-1 relative bg-[#141414]">
+            <div className="flex-1 relative bg-[#1e1e1e]">
               <Editor
                 height="100%"
                 language={
@@ -436,7 +483,7 @@ function PlaygroundContent() {
                   editorType === 'python' ? 'python' :
                   'javascript'
                 }
-                theme="vs-dark"
+                theme={theme === 'dark' ? 'vs-dark' : 'light'}
                 value={
                   editorType === 'web' ? (
                     activeWebTab === 'html' ? html :
@@ -476,12 +523,12 @@ function PlaygroundContent() {
             </div>
 
             {activeLesson && (
-              <div className="bg-[#141414] border-t-4 border-[#000] p-4 max-h-48 overflow-y-auto">
+              <div className="bg-surface-container-low border-t border-outline-variant/20 p-4 max-h-48 overflow-y-auto">
                 <div className="flex items-center gap-2 mb-2">
-                  <BookOpen className="w-4 h-4 text-[#39ff14]" />
-                  <span className="font-pixel text-[10px] text-[#39ff14] uppercase">LESSON: {activeLesson.title}</span>
+                  <BookOpen className="w-4 h-4 text-primary" />
+                  <span className="font-headline font-bold text-sm text-primary">Lesson: {activeLesson.title}</span>
                 </div>
-                <p className="text-[#888] font-mono text-xs leading-relaxed">
+                <p className="text-on-surface-variant text-sm leading-relaxed font-medium">
                   {activeLesson.content}
                 </p>
               </div>
@@ -489,61 +536,63 @@ function PlaygroundContent() {
           </div>
 
           {/* Output Section */}
-          <div className="flex flex-col gap-4 min-h-0">
+          <div className="flex flex-col gap-6 min-h-0">
             
             {/* Preview */}
-            <div className="flex-1 bg-white border-4 border-[#000] rounded-xl shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] overflow-hidden relative">
-              <div className="absolute top-0 left-0 w-full bg-[#141414] border-b-4 border-[#000] py-2 px-4 flex items-center z-10">
+            <div className="flex-1 bg-white border border-outline-variant/20 rounded-2xl shadow-sm overflow-hidden relative flex flex-col">
+              <div className="bg-surface-container-low border-b border-outline-variant/20 py-2 px-4 flex items-center shrink-0">
                 <div className="flex gap-2">
-                  <div className="w-3 h-3 rounded-full bg-red-500 border-2 border-[#000]" />
-                  <div className="w-3 h-3 rounded-full bg-yellow-400 border-2 border-[#000]" />
-                  <div className="w-3 h-3 rounded-full bg-[#39ff14] border-2 border-[#000]" />
+                  <div className="w-3 h-3 rounded-full bg-error" />
+                  <div className="w-3 h-3 rounded-full bg-tertiary" />
+                  <div className="w-3 h-3 rounded-full bg-primary" />
                 </div>
-                <span className="ml-4 font-pixel text-[10px] text-[#888]">PREVIEW</span>
+                <span className="ml-4 font-headline font-bold text-xs text-on-surface-variant uppercase tracking-wider">Preview</span>
               </div>
-              <iframe
-                ref={iframeRef}
-                srcDoc={srcDoc}
-                sandbox="allow-scripts allow-same-origin"
-                className="w-full h-full pt-10 border-none bg-white"
-                title="preview"
-              />
+              <div className="flex-1 relative bg-white">
+                <iframe
+                  ref={iframeRef}
+                  srcDoc={srcDoc}
+                  sandbox="allow-scripts allow-same-origin"
+                  className="absolute inset-0 w-full h-full border-none bg-white"
+                  title="preview"
+                />
+              </div>
             </div>
 
             {/* Console */}
-            <div className="h-64 bg-[#1e1e1e] border-4 border-[#000] rounded-xl shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] flex flex-col overflow-hidden">
-              <div className="flex items-center justify-between bg-[#141414] border-b-4 border-[#000] py-2 px-4">
-                <div className="flex items-center gap-2 font-pixel text-[10px] text-[#888]">
+            <div className="h-64 bg-surface-container-lowest border border-outline-variant/20 rounded-2xl shadow-sm flex flex-col overflow-hidden">
+              <div className="flex items-center justify-between bg-surface-container-low border-b border-outline-variant/20 py-2 px-4">
+                <div className="flex items-center gap-2 font-headline font-bold text-xs text-on-surface-variant uppercase tracking-wider">
                   <Terminal className="w-4 h-4" />
-                  CONSOLE
+                  Console
                 </div>
                 <button 
                   onClick={clearConsole}
-                  className="text-[#888] hover:text-white transition-colors"
+                  className="text-on-surface-variant hover:text-error transition-colors"
                   title="Clear Console"
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
               </div>
-              <div className="flex-1 p-0 overflow-y-auto font-mono text-xs">
+              <div className="flex-1 p-0 overflow-y-auto font-mono text-sm bg-[#1e1e1e]">
                 {logs.length === 0 ? (
-                  <div className="p-4 text-[#888] italic">No output</div>
+                  <div className="p-4 text-zinc-500 italic">No output</div>
                 ) : (
-                  <div className="divide-y divide-[#000]">
+                  <div className="divide-y divide-zinc-800">
                     {logs.map((log, i) => (
                       <div 
                         key={i} 
-                        className={`p-2 flex gap-3 group hover:bg-white/5 transition-colors ${
+                        className={`p-3 flex gap-3 group hover:bg-white/5 transition-colors ${
                           log.type === 'error' 
-                            ? 'bg-red-500/5 text-red-400' 
+                            ? 'bg-red-500/10 text-red-400' 
                             : 'text-zinc-300'
                         }`}
                       >
-                        <div className="flex items-center gap-1 text-[9px] text-[#555] font-mono shrink-0">
+                        <div className="flex items-center gap-1 text-xs text-zinc-500 shrink-0 mt-0.5">
                           <Clock className="w-3 h-3" />
                           {log.time}
                         </div>
-                        <div className="break-all whitespace-pre-wrap">
+                        <div className="break-all whitespace-pre-wrap font-medium">
                           {log.message}
                         </div>
                       </div>
@@ -562,7 +611,7 @@ function PlaygroundContent() {
 
 export default function Playground() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-[#111] flex items-center justify-center font-pixel text-[#39ff14]">LOADING...</div>}>
+    <Suspense fallback={<div className="min-h-screen bg-background flex items-center justify-center font-headline font-bold text-primary">Loading...</div>}>
       <PlaygroundContent />
     </Suspense>
   );
