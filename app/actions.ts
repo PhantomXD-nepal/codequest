@@ -53,6 +53,8 @@ const getCachedUserStats = (userId: string) => unstable_cache(async () => {
     xp: currentUser?.xp || 0,
     streak: currentUser?.streak || 0,
     role: currentUser?.role || 'user',
+    hasCompletedOnboarding: currentUser?.hasCompletedOnboarding || false,
+    hasCompletedTour: currentUser?.hasCompletedTour || false,
     completedLessons,
   };
 }, [`user-stats-${userId}`], { revalidate: 3600, tags: [`user-stats-${userId}`] })();
@@ -440,13 +442,30 @@ export async function revertLessonProgressAction(lessonId: string) {
   return { success: false };
 }
 
+export async function completeOnboardingAction(data: { avatar: string, path: string }) {
+  const session = await getRequiredSession();
+  await db.update(user).set({ 
+    hasCompletedOnboarding: true,
+    image: data.avatar 
+  }).where(eq(user.id, session.user.id));
+  return { success: true };
+}
+
+export async function completeTourAction() {
+  const session = await getRequiredSession();
+  await db.update(user).set({ 
+    hasCompletedTour: true 
+  }).where(eq(user.id, session.user.id));
+  return { success: true };
+}
+
 export async function getUserStatsAction() {
   const session = await auth.api.getSession({
     headers: await headers()
   });
 
   if (!session?.user) {
-    return { xp: 0, streak: 0, role: 'user', completedLessons: [] };
+    return { xp: 0, streak: 0, role: 'user', completedLessons: [], hasCompletedOnboarding: false, hasCompletedTour: false };
   }
 
   return getCachedUserStats(session.user.id);
@@ -795,6 +814,55 @@ export async function updateCourseAction(id: string, data: {
 
   revalidateTag('course-content');
   return updatedCourse[0];
+}
+
+export async function generateLessonWithAIAction(topic: string, language: string) {
+  await getRequiredAdminSession();
+
+  const apiKey = process.env.OPENROUTER_API_KEY;
+  if (!apiKey) {
+    throw new Error("OPENROUTER_API_KEY is not configured");
+  }
+
+  const prompt = `Generate a coding lesson for the topic "${topic}" in the language "${language}".
+  The response must be a JSON object with the following fields:
+  - title: A catchy title for the lesson
+  - description: A brief summary of what the user will learn
+  - content: Detailed markdown content for the lesson
+  - challenge: A specific coding task for the user to complete
+  - hint: A helpful hint for the challenge
+  - initialCode: Starting code for the user
+  - expectedOutput: The exact string output expected from the code
+  - type: One of "beginner", "intermediate", "advanced"
+
+  Make the content engaging and educational.`;
+
+  try {
+    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+        "HTTP-Referer": "https://codequest.app",
+        "X-Title": "CodeQuest"
+      },
+      body: JSON.stringify({
+        model: "openai/gpt-3.5-turbo", // Or any other model
+        messages: [
+          { role: "system", content: "You are an expert coding tutor. Always respond with valid JSON." },
+          { role: "user", content: prompt }
+        ],
+        response_format: { type: "json_object" }
+      })
+    });
+
+    const data = await response.json();
+    const result = JSON.parse(data.choices[0].message.content);
+    return result;
+  } catch (error) {
+    console.error("AI Generation failed:", error);
+    throw new Error("Failed to generate lesson with AI");
+  }
 }
 
 export async function deleteSectionAction(id: string) {

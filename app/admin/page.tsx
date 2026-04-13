@@ -3,8 +3,8 @@
 import React, { useEffect, useState } from "react";
 import { authClient } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
-import { getUserStatsAction, getUsersAction, createSectionAction, createChapterAction, createLessonAction, createCourseAction, createLanguageAction, getLanguagesAction, importNestedCourseAction, getAchievementsAction, createAchievementAction, deleteAchievementAction, deleteAllCoursesAction, getLlmsTxtAction, updateLlmsTxtAction, getAllCoursesAction, deleteCourseAction, deleteSectionAction, deleteChapterAction, deleteLessonAction, updateCourseAction, updateSectionAction, updateChapterAction, updateLessonAction } from "@/app/actions";
-import { ArrowLeft, Users, BookOpen, Plus, Settings, Save, Trash2, FileText, Edit, Search, ChevronDown, ChevronUp } from "lucide-react";
+import { getUserStatsAction, getUsersAction, createSectionAction, createChapterAction, createLessonAction, createCourseAction, createLanguageAction, getLanguagesAction, importNestedCourseAction, getAchievementsAction, createAchievementAction, deleteAchievementAction, deleteAllCoursesAction, getLlmsTxtAction, updateLlmsTxtAction, getAllCoursesAction, deleteCourseAction, deleteSectionAction, deleteChapterAction, deleteLessonAction, updateCourseAction, updateSectionAction, updateChapterAction, updateLessonAction, generateLessonWithAIAction } from "@/app/actions";
+import { ArrowLeft, Users, BookOpen, Plus, Settings, Save, Trash2, FileText, Edit, Search, ChevronDown, ChevronUp, Sparkles, Layout, Trophy, Globe, Wand2 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 
@@ -29,8 +29,35 @@ export default function AdminPage() {
   // LLMS.txt State
   const [llmsContent, setLlmsContent] = useState("");
   
-  // Achievements State
-  const [achievements, setAchievements] = useState<any[]>([]);
+  // AI Generation State
+  const [aiTopic, setAiTopic] = useState('');
+  const [isGenerating, setIsGenerating] = useState(false);
+
+  const handleAiGenerate = async () => {
+    if (!aiTopic) return;
+    setIsGenerating(true);
+    try {
+      const result = await generateLessonWithAIAction(aiTopic, formData.language || 'python');
+      setFormData({
+        ...formData,
+        title: result.title,
+        description: result.description,
+        content: result.content,
+        challenge: result.challenge,
+        hint: result.hint,
+        initialCode: result.initialCode,
+        expectedOutput: result.expectedOutput,
+        type: result.type,
+      });
+      setContentType('lesson');
+      alert("Lesson generated! Please review and save.");
+    } catch (err) {
+      console.error("AI Generation failed:", err);
+      alert("AI Generation failed. Make sure OPENROUTER_API_KEY is set.");
+    } finally {
+      setIsGenerating(false);
+    }
+  };
   const [achievementForm, setAchievementForm] = useState({
     title: '',
     description: '',
@@ -439,7 +466,7 @@ export default function AdminPage() {
     );
   };
 
-  const getFilteredAndSortedData = () => {
+  const filteredAndSortedData = useMemo(() => {
     let data: any[] = [];
     if (contentSubTab === 'courses') data = courses;
     else if (contentSubTab === 'sections') data = getSections();
@@ -465,7 +492,7 @@ export default function AdminPage() {
     });
 
     return data;
-  };
+  }, [courses, contentSubTab, searchQuery, sortConfig]);
 
   const requestSort = (key: string) => {
     let direction: 'asc' | 'desc' = 'asc';
@@ -615,93 +642,91 @@ export default function AdminPage() {
         {activeTab === 'content' && (
           <div className="space-y-6">
             <div className="bg-[#1e1e1e] border-4 border-[#000] p-6 rounded-xl shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-sm font-pixel text-[#39ff14]">COURSE CONTENT MANAGER</h2>
-                <div className="flex gap-2">
-                  <button 
-                    onClick={() => window.open('/llms.txt', '_blank')}
-                    className="font-pixel text-[10px] px-4 py-2 rounded border border-[#333] transition-colors bg-[#252525] text-white hover:bg-[#333]"
-                  >
-                    LLMS.TXT
-                  </button>
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+                <div>
+                  <h2 className="text-sm font-pixel text-[#39ff14] mb-1">CONTENT ARCHITECT</h2>
+                  <p className="text-[10px] text-[#888] font-sans">Build and manage the knowledge base</p>
+                </div>
+                <div className="flex flex-wrap gap-2">
                   <button 
                     onClick={() => document.getElementById('json-upload')?.click()}
-                    className="font-pixel text-[10px] px-4 py-2 rounded border border-[#333] transition-colors bg-[#252525] text-white hover:bg-[#333]"
+                    className="flex items-center gap-2 font-pixel text-[10px] px-4 py-2 rounded border border-[#333] transition-colors bg-[#252525] text-white hover:bg-[#333]"
                   >
+                    <Layout className="w-3 h-3" />
                     IMPORT JSON
                   </button>
                   <a 
                     href="/llms.txt"
                     target="_blank"
-                    className="font-pixel text-[10px] px-4 py-2 rounded border border-[#333] transition-colors bg-[#252525] text-[#39ff14] hover:bg-[#333] flex items-center"
+                    className="flex items-center gap-2 font-pixel text-[10px] px-4 py-2 rounded border border-[#333] transition-colors bg-[#252525] text-[#39ff14] hover:bg-[#333]"
                   >
+                    <FileText className="w-3 h-3" />
                     LLMS.TXT
                   </a>
-                  <input 
-                    type="file" 
-                    id="json-upload" 
-                    accept=".json" 
-                    className="hidden" 
-                    onChange={handleJsonImport} 
-                  />
-                  <div className="w-[1px] h-8 bg-[#333] mx-2" />
-                  <button 
-                    onClick={() => setContentType('section')}
-                    className={`font-pixel text-[10px] px-4 py-2 rounded border border-[#333] transition-colors ${contentType === 'section' ? 'bg-[#39ff14] text-black' : 'bg-[#252525] text-white hover:bg-[#333]'}`}
-                  >
-                    ADD SECTION
-                  </button>
-                  <button 
-                    onClick={() => setContentType('chapter')}
-                    className={`font-pixel text-[10px] px-4 py-2 rounded border border-[#333] transition-colors ${contentType === 'chapter' ? 'bg-[#39ff14] text-black' : 'bg-[#252525] text-white hover:bg-[#333]'}`}
-                  >
-                    ADD CHAPTER
-                  </button>
-                  <button 
-                    onClick={() => setContentType('lesson')}
-                    className={`font-pixel text-[10px] px-4 py-2 rounded border border-[#333] transition-colors ${contentType === 'lesson' ? 'bg-[#39ff14] text-black' : 'bg-[#252525] text-white hover:bg-[#333]'}`}
-                  >
-                    ADD LESSON
-                  </button>
-                  <button 
-                    onClick={() => setContentType('course')}
-                    className={`font-pixel text-[10px] px-4 py-2 rounded border border-[#333] transition-colors ${contentType === 'course' ? 'bg-[#39ff14] text-black' : 'bg-[#252525] text-white hover:bg-[#333]'}`}
-                  >
-                    ADD COURSE
-                  </button>
-                  <button 
-                    onClick={() => setContentType('language')}
-                    className={`font-pixel text-[10px] px-4 py-2 rounded border border-[#333] transition-colors ${contentType === 'language' ? 'bg-[#39ff14] text-black' : 'bg-[#252525] text-white hover:bg-[#333]'}`}
-                  >
-                    ADD LANGUAGE
-                  </button>
-                  <div className="w-[1px] h-8 bg-[#333] mx-2" />
-                  <Link 
-                    href="/admin/courses"
-                    className="font-pixel text-[10px] px-4 py-2 rounded border border-[#39ff14] transition-colors bg-[#1a1a1a] text-[#39ff14] hover:bg-[#39ff14] hover:text-black"
-                  >
-                    MANAGE COURSES
-                  </Link>
                   <button 
                     onClick={handleDeleteAllCourses}
                     disabled={isSubmitting}
-                    className="font-pixel text-[10px] px-4 py-2 rounded border border-red-500 transition-colors bg-[#1a1a1a] text-red-500 hover:bg-red-500 hover:text-white disabled:opacity-50"
+                    className="flex items-center gap-2 font-pixel text-[10px] px-4 py-2 rounded border border-red-500/30 transition-colors bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white disabled:opacity-50"
                   >
-                    DELETE ALL DATA
+                    <Trash2 className="w-3 h-3" />
+                    WIPE DATA
                   </button>
                 </div>
               </div>
+
+              {/* AI Generator Section */}
+              <div className="mb-8 p-6 bg-[#151515] border-2 border-[#333] rounded-xl relative overflow-hidden group">
+                <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                  <Sparkles className="w-12 h-12 text-[#39ff14]" />
+                </div>
+                <div className="relative z-10">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Wand2 className="w-4 h-4 text-[#39ff14]" />
+                    <h3 className="font-pixel text-[10px] text-[#39ff14]">AI LESSON GENERATOR (OPENROUTER)</h3>
+                  </div>
+                  <div className="flex gap-3">
+                    <input 
+                      type="text" 
+                      value={aiTopic}
+                      onChange={(e) => setAiTopic(e.target.value)}
+                      className="flex-1 bg-[#0d0d0d] border border-[#333] rounded-lg p-3 text-white font-sans text-sm focus:outline-none focus:border-[#39ff14]"
+                      placeholder="Enter a topic (e.g., 'Python Loops', 'Async/Await in JS')..."
+                    />
+                    <button 
+                      onClick={handleAiGenerate}
+                      disabled={isGenerating || !aiTopic}
+                      className="bg-[#39ff14] text-black font-pixel text-[10px] px-6 py-2 rounded-lg flex items-center gap-2 hover:bg-[#32e012] transition-all disabled:opacity-50 disabled:grayscale"
+                    >
+                      {isGenerating ? (
+                        <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                      ) : (
+                        <Sparkles className="w-4 h-4" />
+                      )}
+                      {isGenerating ? 'GENERATING...' : 'GENERATE'}
+                    </button>
+                  </div>
+                  <p className="mt-2 text-[8px] text-[#666] font-sans italic">Powered by OpenRouter. Generated content will populate the form below.</p>
+                </div>
+              </div>
               
-              <div className="mb-6 p-4 border border-dashed border-[#333] rounded-lg bg-[#151515]">
-                <label className="text-[10px] font-pixel text-[#888] mb-2 block">QUICK IMPORT (PASTE JSON HERE)</label>
-                <textarea 
-                  onPaste={handleJsonPaste}
-                  className="w-full h-20 bg-[#0d0d0d] border border-[#333] rounded-lg p-3 text-white font-mono text-xs focus:outline-none focus:border-[#39ff14] custom-scrollbar"
-                  placeholder='Paste nested course JSON or lesson JSON here to auto-import...'
-                />
+              <div className="flex flex-wrap gap-2 mb-8 p-2 bg-[#151515] rounded-xl border border-[#2a2a2a]">
+                {(['section', 'chapter', 'lesson', 'course', 'language'] as const).map((type) => (
+                  <button 
+                    key={type}
+                    onClick={() => setContentType(type)}
+                    className={cn(
+                      "flex-1 font-pixel text-[10px] py-2 rounded-lg transition-all",
+                      contentType === type 
+                        ? "bg-[#39ff14] text-black shadow-[0_0_15px_rgba(57,255,20,0.3)]" 
+                        : "text-[#888] hover:text-white hover:bg-[#252525]"
+                    )}
+                  >
+                    {type.toUpperCase()}
+                  </button>
+                ))}
               </div>
 
-              <form onSubmit={handleContentSubmit} className="space-y-4">
+              <form onSubmit={handleContentSubmit} className="space-y-6">
                 <div className="space-y-2">
                   <label className="text-[10px] font-pixel text-[#888]">TITLE</label>
                   <input 
@@ -1149,7 +1174,7 @@ export default function AdminPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {getFilteredAndSortedData().map((item: any) => (
+                    {filteredAndSortedData.map((item: any) => (
                       <tr key={item.id} className="border-b border-[#333] hover:bg-[#252525] transition-colors">
                         <td className="p-4">
                           <div className="font-pixel text-[10px] text-white">{item.title}</div>
@@ -1201,7 +1226,7 @@ export default function AdminPage() {
                         </td>
                       </tr>
                     ))}
-                    {getFilteredAndSortedData().length === 0 && (
+                    {filteredAndSortedData.length === 0 && (
                       <tr>
                         <td colSpan={5} className="p-8 text-center text-[#888] font-pixel text-[10px]">
                           NO {contentSubTab.toUpperCase()} FOUND

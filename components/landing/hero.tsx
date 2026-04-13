@@ -233,7 +233,11 @@ export function Hero() {
       {showOnboarding && (
         <OnboardingModal onComplete={() => {
           setShowOnboarding(false);
-          router.push('/signup');
+          if (session) {
+            router.push('/dashboard');
+          } else {
+            router.push('/signup');
+          }
         }} />
       )}
     </section>

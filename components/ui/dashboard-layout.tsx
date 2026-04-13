@@ -7,6 +7,7 @@ import Image from "next/image";
 import { getUserStatsAction } from "@/app/actions";
 import { Mascot } from "@/components/ui/mascot";
 import { useTheme } from "next-themes";
+import { cn } from "@/lib/utils";
 
 import { LoadingScreen } from "@/components/ui/loading-screen";
 
@@ -172,10 +173,12 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
               <Link 
                 key={link.href} 
                 href={link.href} 
-                className={isActive 
-                  ? "bg-[var(--brand-gradient)] text-white rounded-full py-3 px-4 flex items-center gap-3 font-headline font-semibold translate-x-1 transition-transform"
-                  : "text-on-surface-variant mx-2 py-3 px-4 flex items-center gap-3 font-headline font-semibold hover:bg-surface-container-highest rounded-full transition-all"
-                }
+                className={cn(
+                  isActive 
+                    ? "bg-[var(--brand-gradient)] text-white rounded-full py-3 px-4 flex items-center gap-3 font-headline font-semibold translate-x-1 transition-transform"
+                    : "text-on-surface-variant mx-2 py-3 px-4 flex items-center gap-3 font-headline font-semibold hover:bg-surface-container-highest rounded-full transition-all",
+                  link.className
+                )}
               >
                 <span className="material-symbols-outlined">{link.icon}</span>
                 {link.label}

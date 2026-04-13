@@ -9,7 +9,7 @@ import Link from "next/link";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { Component as LumaSpin } from "@/components/ui/luma-spin";
-import { getUserStatsAction, makeMeAdminAction, getCourseContentByLanguageAction, createChapterAction, createLessonAction, createSectionAction, updateChapterAction, updateLessonAction, updateSectionAction, checkAndUnlockAchievementsAction, getUserRankAction, getLanguagesAction, seedAllCoursesAction, revertLessonProgressAction } from "@/app/actions";
+import { getUserStatsAction, makeMeAdminAction, getCourseContentByLanguageAction, createChapterAction, createLessonAction, createSectionAction, updateChapterAction, updateLessonAction, updateSectionAction, checkAndUnlockAchievementsAction, getUserRankAction, getLanguagesAction, seedAllCoursesAction, revertLessonProgressAction, completeOnboardingAction, completeTourAction } from "@/app/actions";
 import { DashboardLayout } from "@/components/ui/dashboard-layout";
 import dynamic from "next/dynamic";
 import { type Step, type EventData, STATUS } from 'react-joyride';
@@ -67,13 +67,20 @@ export default function DashboardClientPage({
   });
   const [isSaving, setIsSaving] = useState(false);
   const [runTour, setRunTour] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   useEffect(() => {
-    const hasCompletedTour = localStorage.getItem('has_completed_tour');
-    if (!hasCompletedTour) {
-      setRunTour(true);
+    if (session) {
+      if (!initialStats.hasCompletedOnboarding) {
+        setShowOnboarding(true);
+      } else if (!initialStats.hasCompletedTour) {
+        const timer = setTimeout(() => {
+          setRunTour(true);
+        }, 1000);
+        return () => clearTimeout(timer);
+      }
     }
-  }, []);
+  }, [session, initialStats]);
 
   const tourSteps: Step[] = [
     {
@@ -109,13 +116,13 @@ export default function DashboardClientPage({
     }
   ];
 
-  const handleJoyrideCallback = (data: EventData) => {
+  const handleJoyrideCallback = async (data: EventData) => {
     const { status } = data;
     const finishedStatuses: string[] = [STATUS.FINISHED, STATUS.SKIPPED];
 
     if (finishedStatuses.includes(status)) {
       setRunTour(false);
-      localStorage.setItem('has_completed_tour', 'true');
+      await completeTourAction();
       import('@/lib/confetti').then((mod) => {
         mod.triggerConfetti();
         mod.playSuccessSound();
@@ -291,10 +298,6 @@ export default function DashboardClientPage({
     }
   }, [isPending, session]);
 
-  if (isPending || !session) {
-    return <LoadingScreen />;
-  }
-
   if (showLanguageSelect) {
     return (
       <DashboardLayout>
@@ -313,6 +316,13 @@ export default function DashboardClientPage({
 
   return (
     <DashboardLayout>
+      {showOnboarding && (
+        <OnboardingModal onComplete={async (data) => {
+          await completeOnboardingAction(data);
+          setShowOnboarding(false);
+          setRunTour(true);
+        }} />
+      )}
       <Joyride
         steps={tourSteps}
         run={runTour}

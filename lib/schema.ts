@@ -12,6 +12,8 @@ export const user = pgTable("user", {
 	role: text("role").default("student").notNull(),
 	xp: integer("xp").default(0).notNull(),
 	streak: integer("streak").default(0).notNull(),
+	hasCompletedOnboarding: boolean("has_completed_onboarding").default(false).notNull(),
+	hasCompletedTour: boolean("has_completed_tour").default(false).notNull(),
 });
 
 export const userRelations = relations(user, ({ many }) => ({

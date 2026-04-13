@@ -44,7 +44,6 @@ export default function LessonPage({ params }: { params: Promise<{ id: string }>
   
   const [code, setCode] = useState("");
   const [logs, setLogs] = useState<{type: string, message: string, time: string}[]>([]);
-  const [srcDoc, setSrcDoc] = useState("");
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
   useEffect(() => {
@@ -148,12 +147,13 @@ export default function LessonPage({ params }: { params: Promise<{ id: string }>
             ${consoleOverride}
             <script src="https://cdn.jsdelivr.net/pyodide/v0.25.0/full/pyodide.js" crossorigin="anonymous"></script>
             <script>
-              async function runPython() {
+              let pyodideReady = false;
+              let pyodideInstance = null;
+              
+              async function initPyodide() {
                 try {
-                  let pyodide = await loadPyodide();
-                  
-                  // Override input() to use window.prompt
-                  pyodide.runPython(\`
+                  pyodideInstance = await loadPyodide();
+                  pyodideInstance.runPython(\`
                     import builtins
                     import js
                     def custom_input(prompt=""):
@@ -161,22 +161,36 @@ export default function LessonPage({ params }: { params: Promise<{ id: string }>
                         return res if res is not None else ""
                     builtins.input = custom_input
                   \`);
-
-                  pyodide.setStdout({ batched: (msg) => {
-                    console.log(msg);
-                    // Check for expected output
-                    const expected = "${lessonData.lesson.expectedOutput || ''}";
-                    if (expected && msg.trim() === expected.trim()) {
-                      window.parent.postMessage({ type: 'success', message: 'Challenge Completed!' }, '*');
-                    }
-                  }});
-                  pyodide.setStderr({ batched: (msg) => console.error(msg) });
-                  await pyodide.runPythonAsync(\`${code.replace(/\\/g, '\\\\').replace(/`/g, '\\`').replace(/\$/g, '\\$').replace(/</g, '\\x3c')}\`);
+                  pyodideReady = true;
+                  window.parent.postMessage({ type: 'system', message: 'Pyodide ready' }, '*');
                 } catch (err) {
-                  console.error("Python Error: " + err.message);
+                  console.error("Pyodide Init Error: " + err.message);
                 }
               }
-              runPython();
+              
+              initPyodide();
+
+              window.addEventListener('message', async (event) => {
+                if (event.data.type === 'execute') {
+                  if (!pyodideReady) {
+                    console.error("Pyodide is still loading...");
+                    return;
+                  }
+                  try {
+                    pyodideInstance.setStdout({ batched: (msg) => {
+                      console.log(msg);
+                      const expected = event.data.expectedOutput || '';
+                      if (expected && msg.trim() === expected.trim()) {
+                        window.parent.postMessage({ type: 'success', message: 'Challenge Completed!' }, '*');
+                      }
+                    }});
+                    pyodideInstance.setStderr({ batched: (msg) => console.error(msg) });
+                    await pyodideInstance.runPythonAsync(event.data.code);
+                  } catch (err) {
+                    console.error("Python Error: " + err.message);
+                  }
+                }
+              });
             </script>
           </body>
         </html>
@@ -194,11 +208,15 @@ export default function LessonPage({ params }: { params: Promise<{ id: string }>
             <div id="app"></div>
             ${consoleOverride}
             <script>
-              try {
-                eval(\`${code.replace(/\\/g, '\\\\').replace(/`/g, '\\`').replace(/\$/g, '\\$').replace(/</g, '\\x3c')}\`);
-              } catch (err) {
-                console.error(err.message);
-              }
+              window.addEventListener('message', (event) => {
+                if (event.data.type === 'execute') {
+                  try {
+                    eval(event.data.code);
+                  } catch (err) {
+                    console.error(err.message);
+                  }
+                }
+              });
             </script>
           </body>
         </html>
@@ -206,7 +224,27 @@ export default function LessonPage({ params }: { params: Promise<{ id: string }>
     }
 
     setLogs([]);
-    setSrcDoc(htmlContent);
+    
+    // Write the static HTML to the iframe, then post the code
+    if (iframeRef.current) {
+      const iframeDoc = iframeRef.current.contentDocument || iframeRef.current.contentWindow?.document;
+      if (iframeDoc) {
+        iframeDoc.open();
+        iframeDoc.write(htmlContent);
+        iframeDoc.close();
+        
+        // Give it a tiny bit of time to parse the HTML and attach listeners
+        setTimeout(() => {
+          if (iframeRef.current?.contentWindow) {
+            iframeRef.current.contentWindow.postMessage({
+              type: 'execute',
+              code: code,
+              expectedOutput: lessonData.lesson.expectedOutput
+            }, '*');
+          }
+        }, 100);
+      }
+    }
   };
 
   useEffect(() => {
@@ -409,7 +447,6 @@ export default function LessonPage({ params }: { params: Promise<{ id: string }>
               {/* Hidden iframe for execution */}
               <iframe
                 ref={iframeRef}
-                srcDoc={srcDoc}
                 sandbox="allow-scripts allow-same-origin"
                 className="hidden"
                 title="preview"
