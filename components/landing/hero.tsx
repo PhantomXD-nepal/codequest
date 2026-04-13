@@ -27,6 +27,7 @@ export function LandingHeader() {
             <nav className="hidden md:flex gap-6">
               <a href="#" className="text-primary font-extrabold font-headline text-sm tracking-tight hover:scale-105 transition-transform duration-200">Home</a>
               <a href="#features" className="text-on-surface font-medium font-headline text-sm tracking-tight hover:scale-105 transition-transform duration-200">Quests</a>
+              <a href="#faq" className="text-on-surface font-medium font-headline text-sm tracking-tight hover:scale-105 transition-transform duration-200">FAQ</a>
               <a href="#mission" className="text-on-surface font-medium font-headline text-sm tracking-tight hover:scale-105 transition-transform duration-200">About Nepal Mission</a>
             </nav>
             <div className="flex items-center gap-4">
@@ -89,6 +90,7 @@ export function LandingHeader() {
             </button>
             <a href="#" className="text-on-surface text-2xl font-bold font-headline hover:text-primary transition-colors" onClick={() => setIsMenuOpen(false)}>Home</a>
             <a href="#features" className="text-on-surface text-2xl font-bold font-headline hover:text-primary transition-colors" onClick={() => setIsMenuOpen(false)}>Quests</a>
+            <a href="#faq" className="text-on-surface text-2xl font-bold font-headline hover:text-primary transition-colors" onClick={() => setIsMenuOpen(false)}>FAQ</a>
             <a href="#mission" className="text-on-surface text-2xl font-bold font-headline hover:text-primary transition-colors" onClick={() => setIsMenuOpen(false)}>About Nepal Mission</a>
             
             <div className="flex flex-col items-center gap-4 mt-8">

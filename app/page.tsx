@@ -1,6 +1,7 @@
 "use client";
 
 import { LandingHeader, Hero } from "@/components/landing/hero";
+import FAQSection from "@/components/landing/faq";
 import Link from "next/link";
 import { motion } from "motion/react";
 import { authClient } from "@/lib/auth-client";
@@ -167,6 +168,8 @@ export default function Home() {
             </motion.div>
           </div>
         </section>
+
+        <FAQSection />
 
         {/* CTA Section */}
         <section className="py-24 px-6">
