@@ -107,19 +107,19 @@ export default function LessonPage({ params }: { params: Promise<{ id: string }>
   const compileAndRun = () => {
     const consoleOverride = `
       <script>
-        const originalLog = console.log;
-        const originalError = console.error;
+        const originalLog = console.log.bind(console);
+        const originalError = console.error.bind(console);
         
         console.log = function(...args) {
           const msg = args.map(a => a instanceof Error ? a.message : typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ');
           window.parent.postMessage({ type: 'log', message: msg, time: new Date().toLocaleTimeString() }, '*');
-          originalLog.apply(console, args);
+          originalLog(...args);
         };
         
         console.error = function(...args) {
           const msg = args.map(a => a instanceof Error ? a.message : typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ');
           window.parent.postMessage({ type: 'error', message: msg, time: new Date().toLocaleTimeString() }, '*');
-          originalError.apply(console, args);
+          originalError(...args);
         };
         
         window.onerror = function(msg, url, line, col, error) {
@@ -132,13 +132,16 @@ export default function LessonPage({ params }: { params: Promise<{ id: string }>
     const isPython = lessonData?.language === 'python';
 
     let htmlContent = "";
+    const isDark = theme === 'dark';
+    const bgColor = isDark ? '#09090b' : '#f8f9fa';
+    const textColor = isDark ? '#f4f4f5' : '#1a1c1e';
 
     if (isPython) {
       htmlContent = `
         <!DOCTYPE html>
         <html>
           <head>
-            <style>body { background: #f8f9fa; color: #1a1c1e; font-family: sans-serif; padding: 1rem; }</style>
+            <style>body { background: ${bgColor}; color: ${textColor}; font-family: sans-serif; padding: 1rem; transition: background 0.3s, color 0.3s; }</style>
           </head>
           <body>
             <div id="app">Python Output will appear in console.</div>
@@ -149,6 +152,16 @@ export default function LessonPage({ params }: { params: Promise<{ id: string }>
                 try {
                   let pyodide = await loadPyodide();
                   
+                  // Override input() to use window.prompt
+                  pyodide.runPython(\`
+                    import builtins
+                    import js
+                    def custom_input(prompt=""):
+                        res = js.prompt(prompt)
+                        return res if res is not None else ""
+                    builtins.input = custom_input
+                  \`);
+
                   pyodide.setStdout({ batched: (msg) => {
                     console.log(msg);
                     // Check for expected output
@@ -174,7 +187,7 @@ export default function LessonPage({ params }: { params: Promise<{ id: string }>
         <html>
           <head>
             <style>
-              body { background: #f8f9fa; color: #1a1c1e; font-family: sans-serif; padding: 1rem; }
+              body { background: ${bgColor}; color: ${textColor}; font-family: sans-serif; padding: 1rem; transition: background 0.3s, color 0.3s; }
             </style>
           </head>
           <body>
@@ -322,7 +335,7 @@ export default function LessonPage({ params }: { params: Promise<{ id: string }>
                 </motion.button>
               </div>
               
-              <div className="flex-1 relative bg-[#1e1e1e]">
+              <div className="flex-1 relative bg-surface-container-lowest">
                 <Editor
                   height="100%"
                   language={language === 'python' ? 'python' : 'javascript'}
@@ -379,7 +392,7 @@ export default function LessonPage({ params }: { params: Promise<{ id: string }>
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>
               </div>
-              <div className="flex-1 overflow-y-auto custom-scrollbar p-4 font-mono text-sm bg-[#1e1e1e]">
+              <div className="flex-1 overflow-y-auto custom-scrollbar p-4 font-mono text-sm bg-surface-container-lowest">
                 {logs.length === 0 ? (
                   <div className="text-zinc-500 italic text-xs">No output yet. Run your code to see results.</div>
                 ) : (
@@ -411,10 +424,10 @@ export default function LessonPage({ params }: { params: Promise<{ id: string }>
           width: 6px;
         }
         .custom-scrollbar::-webkit-scrollbar-track {
-          background: #1e1e1e;
+          background: transparent;
         }
         .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: #3f3f46;
+          background: var(--color-surface-container-high);
           border-radius: 3px;
         }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover {

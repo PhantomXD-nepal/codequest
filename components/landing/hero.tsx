@@ -14,20 +14,20 @@ export function LandingHeader() {
 
   return (
     <>
-      <header className="fixed top-0 left-0 right-0 z-50 bg-[#f9f4ff]/80 backdrop-blur-xl shadow-[0_20px_40px_rgba(46,42,80,0.08)]">
+      <header className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl shadow-[var(--header-shadow)]">
         <div className="max-w-7xl mx-auto flex justify-between items-center px-6 py-4">
           <div className="flex items-center gap-2">
-            <div className="w-10 h-10 bg-gradient-to-br from-[#254dd5] to-[#839aff] rounded-xl flex items-center justify-center">
+            <div className="w-10 h-10 bg-[var(--brand-gradient)] rounded-xl flex items-center justify-center">
               <span className="material-symbols-outlined text-white" style={{ fontVariationSettings: "'FILL' 1" }}>terminal</span>
             </div>
-            <span className="text-xl font-black bg-gradient-to-br from-[#254dd5] to-[#839aff] bg-clip-text text-transparent font-headline">CodeQuest</span>
+            <span className="text-xl font-black bg-[var(--brand-gradient)] bg-clip-text text-transparent font-headline">CodeQuest</span>
           </div>
           
           <div className="hidden md:flex gap-8 items-center">
-            <nav className="flex gap-6">
-              <a href="#" className="text-[#254dd5] font-extrabold font-headline text-sm tracking-tight hover:scale-105 transition-transform duration-200">Home</a>
-              <a href="#features" className="text-[#2e2a50] font-medium font-headline text-sm tracking-tight hover:scale-105 transition-transform duration-200">Quests</a>
-              <a href="#mission" className="text-[#2e2a50] font-medium font-headline text-sm tracking-tight hover:scale-105 transition-transform duration-200">About Nepal Mission</a>
+            <nav className="hidden md:flex gap-6">
+              <a href="#" className="text-primary font-extrabold font-headline text-sm tracking-tight hover:scale-105 transition-transform duration-200">Home</a>
+              <a href="#features" className="text-on-surface font-medium font-headline text-sm tracking-tight hover:scale-105 transition-transform duration-200">Quests</a>
+              <a href="#mission" className="text-on-surface font-medium font-headline text-sm tracking-tight hover:scale-105 transition-transform duration-200">About Nepal Mission</a>
             </nav>
             <div className="flex items-center gap-4">
               {session ? (

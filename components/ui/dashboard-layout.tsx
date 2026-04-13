@@ -70,7 +70,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="bg-background font-body text-on-surface min-h-screen flex">
       {/* TopNavBar */}
-      <header className="fixed top-0 right-0 left-0 md:left-64 z-40 bg-background/80 backdrop-blur-xl shadow-[0_20px_40px_rgba(46,42,80,0.08)] flex justify-between items-center px-6 py-4">
+      <header className="fixed top-0 right-0 left-0 md:left-64 z-40 bg-background/80 backdrop-blur-xl shadow-[var(--header-shadow)] flex justify-between items-center px-6 py-4">
         <div className="flex items-center gap-4">
           <button 
             onClick={() => setIsSidebarOpen(true)}
@@ -78,7 +78,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           >
             <Menu className="w-6 h-6 text-on-surface" />
           </button>
-          <h1 className="text-xl font-black bg-gradient-to-br from-[#254dd5] to-[#839aff] bg-clip-text text-transparent font-headline">Radiant Explorer</h1>
+          <h1 className="text-xl font-black bg-[var(--brand-gradient)] bg-clip-text text-transparent font-headline">Radiant Explorer</h1>
         </div>
         <div className="flex items-center gap-3">
           {/* Streak */}
@@ -173,7 +173,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                 key={link.href} 
                 href={link.href} 
                 className={isActive 
-                  ? "bg-gradient-to-r from-[#254dd5] to-[#839aff] text-white rounded-full py-3 px-4 flex items-center gap-3 font-headline font-semibold translate-x-1 transition-transform"
+                  ? "bg-[var(--brand-gradient)] text-white rounded-full py-3 px-4 flex items-center gap-3 font-headline font-semibold translate-x-1 transition-transform"
                   : "text-on-surface-variant mx-2 py-3 px-4 flex items-center gap-3 font-headline font-semibold hover:bg-surface-container-highest rounded-full transition-all"
                 }
               >
@@ -188,7 +188,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
               <Link 
                 href="/admin" 
                 className={pathname === '/admin'
-                  ? "bg-gradient-to-r from-[#254dd5] to-[#839aff] text-white rounded-full py-3 px-4 flex items-center gap-3 font-headline font-semibold translate-x-1 transition-transform"
+                  ? "bg-[var(--brand-gradient)] text-white rounded-full py-3 px-4 flex items-center gap-3 font-headline font-semibold translate-x-1 transition-transform"
                   : "text-on-surface-variant mx-2 py-3 px-4 flex items-center gap-3 font-headline font-semibold hover:bg-surface-container-highest rounded-full transition-all"
                 }
               >
@@ -216,7 +216,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
       </main>
 
       {/* BottomNavBar (Mobile Only) */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-background/90 backdrop-blur-lg flex justify-around items-center py-4 px-2 z-50 rounded-t-xl shadow-[0_-10px_30px_rgba(46,42,80,0.08)]">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-background/90 backdrop-blur-lg flex justify-around items-center py-4 px-2 z-50 rounded-t-xl shadow-[var(--header-shadow)]">
         {navLinks.slice(0, 4).map((link) => {
           const isActive = pathname === link.href;
           return (

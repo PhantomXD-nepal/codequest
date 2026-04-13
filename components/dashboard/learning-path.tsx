@@ -53,7 +53,7 @@ function LessonNode({
           whileHover={!isLocked ? { scale: 1.1 } : {}}
           whileTap={!isLocked ? { scale: 0.95 } : {}}
           className={`w-24 h-24 rounded-full border-8 border-surface-container-highest flex items-center justify-center shadow-xl transition-all duration-300 ${
-            isCompleted ? 'bg-primary' : isCurrent ? 'bg-gradient-to-br from-tertiary to-tertiary-dim ring-4 ring-tertiary-container/50 w-28 h-28' : 'bg-surface-variant opacity-60 grayscale'
+            isCompleted ? 'bg-primary' : isCurrent ? 'bg-gradient-to-br from-tertiary to-tertiary-dim ring-4 ring-tertiary-container/50 w-28 h-28' : 'bg-surface-container-high opacity-40 grayscale'
           }`}
         >
           {isCompleted ? (
